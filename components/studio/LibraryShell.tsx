@@ -1,13 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { MUSIC_LENGTH_OPTIONS_MS } from "@/lib/music-prompt";
+import { useEffect, useState } from "react";
 import type { StudioTrack } from "@/lib/studio-track";
-import { CreatePanel } from "@/components/studio/CreatePanel";
 import { StudioSidebar } from "@/components/studio/StudioSidebar";
 import { WorkspaceLibrary } from "@/components/studio/WorkspaceLibrary";
 
-export function StudioShell() {
+export function LibraryShell() {
   const [tracks, setTracks] = useState<StudioTrack[]>([]);
   const [libraryLoading, setLibraryLoading] = useState(true);
 
@@ -30,21 +28,14 @@ export function StudioShell() {
     };
   }, []);
 
-  const addGeneratedTrack = useCallback((track: StudioTrack) => {
-    setTracks((prev) => {
-      const withoutDup = prev.filter((t) => t.id !== track.id);
-      return [track, ...withoutDup];
-    });
-  }, []);
-
   return (
     <div className="flex min-h-[100dvh] flex-col overflow-y-auto bg-[#0a0908] text-[#f4f1ec] lg:h-[100dvh] lg:flex-row lg:overflow-hidden">
       <StudioSidebar />
-      <CreatePanel
-        onGenerated={addGeneratedTrack}
-        lengthOptions={MUSIC_LENGTH_OPTIONS_MS}
+      <WorkspaceLibrary
+        tracks={tracks}
+        isLoading={libraryLoading}
+        variant="page"
       />
-      <WorkspaceLibrary tracks={tracks} isLoading={libraryLoading} />
     </div>
   );
 }

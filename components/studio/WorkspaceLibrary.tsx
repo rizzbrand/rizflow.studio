@@ -18,6 +18,9 @@ import type { StudioTrack } from "@/lib/studio-track";
 
 type WorkspaceLibraryProps = {
   tracks: StudioTrack[];
+  isLoading?: boolean;
+  /** Full main-area width on `/library`; default is fixed sidebar width on `/create`. */
+  variant?: "sidebar" | "page";
 };
 
 function buildMockVerse(track: StudioTrack): string[] {
@@ -69,7 +72,11 @@ function buildMockVerse(track: StudioTrack): string[] {
   return pick;
 }
 
-export function WorkspaceLibrary({ tracks }: WorkspaceLibraryProps) {
+export function WorkspaceLibrary({
+  tracks,
+  isLoading = false,
+  variant = "sidebar",
+}: WorkspaceLibraryProps) {
   const [query, setQuery] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -88,8 +95,13 @@ export function WorkspaceLibrary({ tracks }: WorkspaceLibraryProps) {
     return filtered.find((t) => t.id === activeId) ?? filtered[0];
   }, [activeId, filtered]);
 
+  const asideClass =
+    variant === "page"
+      ? "flex min-h-[50vh] w-full min-w-0 flex-1 flex-col bg-[#090807] lg:min-h-0"
+      : "flex min-h-[40vh] w-full shrink-0 flex-col bg-[#090807] lg:min-h-0 lg:w-[var(--library-w)]";
+
   return (
-    <aside className="flex min-h-[40vh] w-full shrink-0 flex-col bg-[#090807] lg:min-h-0 lg:w-[var(--library-w)]">
+    <aside className={asideClass}>
       <div className="border-b border-white/[0.06] px-4 py-4">
         <p className="text-xs font-medium text-white/40">
           <span className="text-white/55">Workspaces</span>
@@ -140,6 +152,11 @@ export function WorkspaceLibrary({ tracks }: WorkspaceLibraryProps) {
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto px-3 py-3 scrollbar-thin">
+          {isLoading ? (
+            <p className="py-6 text-center text-sm text-white/45">
+              Loading your library…
+            </p>
+          ) : null}
           <ul className="flex flex-col gap-3">
             {filtered.map((track) => {
               const isActive = activeTrack?.id === track.id;
@@ -247,9 +264,11 @@ export function WorkspaceLibrary({ tracks }: WorkspaceLibraryProps) {
               );
             })}
           </ul>
-          {filtered.length === 0 ? (
+          {!isLoading && filtered.length === 0 ? (
             <p className="py-8 text-center text-sm text-white/40">
-              No tracks match.
+              {tracks.length === 0 && !query.trim()
+                ? "No songs yet. Create one to save it here."
+                : "No tracks match."}
             </p>
           ) : null}
         </div>

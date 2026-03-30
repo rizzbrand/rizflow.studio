@@ -3,6 +3,7 @@
 import { Dices, Loader2, Mic, Music2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { inspirationChips } from "@/lib/mock-tracks";
+import type { StudioTrack } from "@/lib/studio-track";
 
 const RANDOM_PROMPTS = [
   "Dreamy shoegaze with washed-out guitars and a slow motorik beat",
@@ -15,12 +16,7 @@ const RANDOM_PROMPTS = [
 type LengthOption = { label: string; value: number };
 
 type CreatePanelProps = {
-  onGenerated: (payload: {
-    title: string;
-    genres: string[];
-    musicLengthMs: number;
-    audioBase64: string;
-  }) => void;
+  onGenerated: (track: StudioTrack) => void;
   lengthOptions: readonly LengthOption[];
 };
 
@@ -46,6 +42,7 @@ export function CreatePanel({ onGenerated, lengthOptions }: CreatePanelProps) {
       const res = await fetch("/api/music/compose", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           description: prompt.trim(),
           musicLengthMs,
@@ -55,8 +52,7 @@ export function CreatePanel({ onGenerated, lengthOptions }: CreatePanelProps) {
       const data = (await res.json()) as {
         error?: string;
         promptSuggestion?: string;
-        song?: { title: string; genres: string[] };
-        audioBase64?: string;
+        track?: StudioTrack;
         musicLengthMs?: number;
       };
 
@@ -66,17 +62,12 @@ export function CreatePanel({ onGenerated, lengthOptions }: CreatePanelProps) {
         return;
       }
 
-      if (!data.audioBase64 || !data.song) {
+      if (!data.track) {
         setError("Unexpected response from server.");
         return;
       }
 
-      onGenerated({
-        title: data.song.title,
-        genres: data.song.genres ?? [],
-        musicLengthMs: data.musicLengthMs ?? musicLengthMs,
-        audioBase64: data.audioBase64,
-      });
+      onGenerated(data.track);
     } catch {
       setError("Network error. Try again.");
     } finally {

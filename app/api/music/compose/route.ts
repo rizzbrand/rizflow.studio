@@ -1,9 +1,15 @@
+import { randomUUID } from "node:crypto";
+import { del, put } from "@vercel/blob";
 import { ElevenLabsClient, type MultipartResponse } from "@elevenlabs/elevenlabs-js";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import {
   buildMusicPrompt,
   clampMusicLengthMs,
 } from "@/lib/music-prompt";
+import { insertTrack } from "@/lib/tracks";
+import type { StudioTrack } from "@/lib/studio-track";
 
 export const maxDuration = 300;
 
@@ -33,6 +39,24 @@ function tryParseBadPrompt(body: unknown): string | undefined {
 }
 
 export async function POST(request: Request) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!blobToken) {
+    return NextResponse.json(
+      {
+        error:
+          "BLOB_READ_WRITE_TOKEN is not configured. Add it in Vercel / .env.local for Blob storage.",
+      },
+      { status: 503 }
+    );
+  }
+
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
@@ -81,7 +105,6 @@ export async function POST(request: Request) {
       modelId: "music_v1",
     })) as unknown as MultipartResponse;
 
-    const audioBase64 = result.audio.toString("base64");
     const meta = result.json.songMetadata as {
       title: string;
       description: string;
@@ -91,7 +114,51 @@ export async function POST(request: Request) {
       is_explicit?: boolean;
     };
 
+    const userId = String(session.user.id);
+    const pathname = `music/${userId}/${randomUUID()}.mp3`;
+
+    let uploaded: { url: string; pathname: string };
+    try {
+      uploaded = await put(pathname, result.audio, {
+        access: "public",
+        token: blobToken,
+        contentType: "audio/mpeg",
+      });
+    } catch (err) {
+      console.error("Vercel Blob upload failed:", err);
+      return NextResponse.json(
+        { error: "Failed to upload audio to storage." },
+        { status: 502 }
+      );
+    }
+
+    let track: StudioTrack;
+    try {
+      track = await insertTrack({
+        userId,
+        title: meta.title || "Untitled",
+        description: meta.description ?? "",
+        genres: Array.isArray(meta.genres) ? meta.genres : [],
+        musicLengthMs,
+        audioUrl: uploaded.url,
+        blobPathname: uploaded.pathname,
+        model: "Eleven Music",
+      });
+    } catch (err) {
+      console.error("Track DB insert failed:", err);
+      try {
+        await del(uploaded.url, { token: blobToken });
+      } catch {
+        // best-effort cleanup
+      }
+      return NextResponse.json(
+        { error: "Failed to save track metadata." },
+        { status: 502 }
+      );
+    }
+
     return NextResponse.json({
+      track,
       song: {
         title: meta.title,
         description: meta.description,
@@ -99,7 +166,6 @@ export async function POST(request: Request) {
         languages: meta.languages,
         isExplicit: Boolean(meta.isExplicit ?? meta.is_explicit),
       },
-      audioBase64,
       mimeType: "audio/mpeg",
       filename: result.filename,
       musicLengthMs,

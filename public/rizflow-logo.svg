@@ -1,0 +1,18 @@
+<svg width="164" height="40" viewBox="0 0 164 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="8" y1="6" x2="30" y2="34" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF6A3D"/>
+      <stop offset="1" stop-color="#C41E3A"/>
+    </linearGradient>
+  </defs>
+  <rect x="0.5" y="0.5" width="39" height="39" rx="10.5" fill="#12100F"/>
+  <rect x="0.5" y="0.5" width="39" height="39" rx="10.5" stroke="rgba(255,255,255,0.12)"/>
+  <path d="M11 29V11H24.6C28.1 11 30.6 13 30.6 16.2C30.6 18.9 28.8 20.6 26.2 21L31 29H25.8L21.5 21.4H15.8V29H11ZM15.8 17.9H23.8C24.9 17.9 25.7 17.3 25.7 16.3C25.7 15.2 24.9 14.6 23.8 14.6H15.8V17.9Z" fill="url(#g)"/>
+  <path d="M46 28V12H57.5C61 12 63.2 13.8 63.2 16.6C63.2 18.7 61.9 20 60.1 20.5C62.4 20.9 64 22.4 64 24.8C64 27.8 61.7 30 57.8 30H46V28Z" fill="white" fill-opacity="0.95"/>
+  <path d="M67.5 30V12H72V18.6H79.7V12H84.2V30H79.7V22.4H72V30H67.5Z" fill="white" fill-opacity="0.95"/>
+  <path d="M88 30V12H102.4V15.8H92.5V18.9H101.7V22.5H92.5V26.2H102.6V30H88Z" fill="white" fill-opacity="0.95"/>
+  <path d="M105.6 30V12H110.1V26.1H118.4V30H105.6Z" fill="white" fill-opacity="0.95"/>
+  <path d="M120.8 30V12H135.1V15.8H125.3V19.2H134.3V22.9H125.3V30H120.8Z" fill="white" fill-opacity="0.95"/>
+  <path d="M144.4 30.4C138.7 30.4 134.9 26.5 134.9 21C134.9 15.5 138.7 11.6 144.4 11.6C150.1 11.6 153.9 15.5 153.9 21C153.9 26.5 150.1 30.4 144.4 30.4ZM144.4 26.4C147.4 26.4 149.3 24.2 149.3 21C149.3 17.8 147.4 15.6 144.4 15.6C141.4 15.6 139.5 17.8 139.5 21C139.5 24.2 141.4 26.4 144.4 26.4Z" fill="white" fill-opacity="0.95"/>
+  <path d="M158.2 30V12H162.7V30H158.2Z" fill="white" fill-opacity="0.95"/>
+</svg>
