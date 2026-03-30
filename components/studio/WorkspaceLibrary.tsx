@@ -13,8 +13,11 @@ import {
   ThumbsDown,
   ThumbsUp,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { StudioTrack } from "@/lib/studio-track";
+import { useStudioPlayer } from "@/components/studio/StudioPlayerContext";
+import { authClient } from "@/lib/auth-client";
+import { userDisplayName } from "@/lib/user-display";
 
 type WorkspaceLibraryProps = {
   tracks: StudioTrack[];
@@ -79,7 +82,17 @@ export function WorkspaceLibrary({
 }: WorkspaceLibraryProps) {
   const [query, setQuery] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { setQueue, playTrack, currentTrack, isPlaying } = useStudioPlayer();
+  const { data: session } = authClient.useSession();
+  const artistName = userDisplayName(session?.user);
+
+  useEffect(() => {
+    setQueue(tracks);
+  }, [tracks, setQueue]);
+
+  useEffect(() => {
+    if (currentTrack?.id) setActiveId(currentTrack.id);
+  }, [currentTrack?.id]);
 
   const filtered = useMemo(
     () =>
@@ -160,19 +173,30 @@ export function WorkspaceLibrary({
           <ul className="flex flex-col gap-3">
             {filtered.map((track) => {
               const isActive = activeTrack?.id === track.id;
+              const isNowPlaying = currentTrack?.id === track.id && isPlaying;
               return (
                 <li
                   key={track.id}
                   className={`group rounded-2xl border bg-[#0f0e0d] p-3 transition hover:border-white/[0.1] ${
-                    isActive ? "border-white/[0.16]" : "border-white/[0.06]"
+                    isNowPlaying
+                      ? "border-fuchsia-500/35 shadow-[0_0_0_1px_rgba(217,70,239,0.12)]"
+                      : isActive
+                        ? "border-white/[0.16]"
+                        : "border-white/[0.06]"
                   }`}
                 >
                   <div
                     role="button"
                     tabIndex={0}
-                    onClick={() => setActiveId(track.id)}
+                    onClick={() => {
+                      setActiveId(track.id);
+                      playTrack(track);
+                    }}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") setActiveId(track.id);
+                      if (e.key === "Enter" || e.key === " ") {
+                        setActiveId(track.id);
+                        playTrack(track);
+                      }
                     }}
                     className="flex w-full cursor-pointer items-start gap-3 text-left"
                   >
@@ -196,7 +220,7 @@ export function WorkspaceLibrary({
                             {track.title}
                           </p>
                           <p className="mt-0.5 text-xs text-white/40">
-                            {track.model}
+                            {artistName}
                           </p>
                         </div>
                         <button
@@ -296,7 +320,7 @@ export function WorkspaceLibrary({
                         {activeTrack.title}
                       </p>
                       <p className="mt-1 text-xs text-white/40">
-                        {activeTrack.model}
+                        {artistName}
                       </p>
                     </div>
                     {activeTrack.preview ? (
@@ -355,19 +379,14 @@ export function WorkspaceLibrary({
               </div>
 
               <div className="rounded-2xl border border-white/[0.06] bg-[#0f0e0d] p-3">
-                {activeTrack.audioUrl ? (
-                  <audio
-                    ref={audioRef}
-                    src={activeTrack.audioUrl}
-                    controls
-                    className="w-full"
-                    preload="metadata"
-                  />
-                ) : (
-                  <p className="text-sm text-white/45">
-                    Audio player appears after a new generation.
-                  </p>
-                )}
+                <p className="text-xs font-medium uppercase tracking-wider text-white/35">
+                  Playback
+                </p>
+                <p className="mt-2 text-sm text-white/55">
+                  {activeTrack.audioUrl
+                    ? "Use the player bar below to play, seek, and adjust volume."
+                    : "Generate or open a track with audio to use the player bar."}
+                </p>
               </div>
             </div>
           ) : (

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { StudioTrack } from "@/lib/studio-track";
+import { StudioPlayerProvider } from "@/components/studio/StudioPlayerContext";
+import { StudioPlayerBar } from "@/components/studio/StudioPlayerBar";
 import { StudioSidebar } from "@/components/studio/StudioSidebar";
 import { WorkspaceLibrary } from "@/components/studio/WorkspaceLibrary";
 
@@ -29,13 +31,16 @@ export function LibraryShell() {
   }, []);
 
   return (
-    <div className="flex min-h-[100dvh] flex-col overflow-y-auto bg-[#0a0908] text-[#f4f1ec] lg:h-[100dvh] lg:flex-row lg:overflow-hidden">
-      <StudioSidebar />
-      <WorkspaceLibrary
-        tracks={tracks}
-        isLoading={libraryLoading}
-        variant="page"
-      />
-    </div>
+    <StudioPlayerProvider>
+      <div className="flex min-h-[100dvh] flex-col overflow-y-auto bg-[#0a0908] pb-[var(--player-h)] text-[#f4f1ec] lg:h-[100dvh] lg:flex-row lg:overflow-hidden">
+        <StudioSidebar />
+        <WorkspaceLibrary
+          tracks={tracks}
+          isLoading={libraryLoading}
+          variant="page"
+        />
+      </div>
+      <StudioPlayerBar />
+    </StudioPlayerProvider>
   );
 }

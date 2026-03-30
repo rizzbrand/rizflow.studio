@@ -1,6 +1,7 @@
 "use client";
 
 import { authClient } from "@/lib/auth-client";
+import { userDisplayName } from "@/lib/user-display";
 import { Loader2, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -19,10 +20,7 @@ export function StudioUserSection() {
   }
 
   const user = session?.user;
-  const label =
-    user?.name?.trim() ||
-    user?.email?.split("@")[0] ||
-    "Account";
+  const label = userDisplayName(user, "Account");
 
   return (
     <div className="flex items-center gap-3 px-4 py-3">
