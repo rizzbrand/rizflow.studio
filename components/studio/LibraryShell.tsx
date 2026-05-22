@@ -32,13 +32,19 @@ export function LibraryShell() {
 
   return (
     <StudioPlayerProvider>
-      <div className="flex min-h-[100dvh] flex-col overflow-y-auto bg-[#0a0908] pb-[var(--player-h)] text-[#f4f1ec] lg:h-[100dvh] lg:flex-row lg:overflow-hidden">
+      <div className="rf-studio-shell flex min-h-[100dvh] flex-col overflow-x-hidden pb-[var(--player-h)] text-[#f4f1ec] lg:h-[calc(100dvh-var(--player-h))] lg:min-h-0 lg:flex-row lg:overflow-hidden lg:pb-0">
         <StudioSidebar />
-        <WorkspaceLibrary
-          tracks={tracks}
-          isLoading={libraryLoading}
-          variant="page"
-        />
+        <main
+          id="library-main"
+          className="min-h-0 min-w-0 flex-1 overflow-y-auto lg:min-h-0 lg:overflow-hidden"
+          aria-label="Your library"
+        >
+          <WorkspaceLibrary
+            tracks={tracks}
+            isLoading={libraryLoading}
+            variant="page"
+          />
+        </main>
       </div>
       <StudioPlayerBar />
     </StudioPlayerProvider>

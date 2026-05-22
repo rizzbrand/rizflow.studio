@@ -46,7 +46,7 @@ export function StudioUserSection() {
         <LogOut className="h-4 w-4" />
       </button>
       <Link
-        href="/"
+        href="/create"
         className="text-xs font-medium text-white/40 hover:text-white/65"
       >
         Home

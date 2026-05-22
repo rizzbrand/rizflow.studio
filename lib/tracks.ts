@@ -27,6 +27,7 @@ function docToStudioTrack(doc: TrackDoc): StudioTrack {
     tags: doc.genres,
     thumbGradient: gradientForId(doc._id.toString()),
     audioUrl: doc.audioUrl,
+    createdAt: doc.createdAt.getTime(),
   };
 }
 
@@ -68,4 +69,18 @@ export async function listTracksForUser(userId: string): Promise<StudioTrack[]> 
     .toArray();
 
   return docs.map((d) => docToStudioTrack(d as TrackDoc));
+}
+
+export async function getTrackByIdForUser(
+  userId: string,
+  trackId: string
+): Promise<StudioTrack | null> {
+  if (!ObjectId.isValid(trackId)) return null;
+  const db = getMongoDb();
+  const doc = await db.collection(COLLECTION).findOne({
+    _id: new ObjectId(trackId),
+    userId,
+  });
+  if (!doc) return null;
+  return docToStudioTrack(doc as TrackDoc);
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  Download,
+  Loader2,
   Pause,
   Play,
   Repeat,
@@ -10,12 +12,16 @@ import {
   SkipForward,
   Volume2,
 } from "lucide-react";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   formatPlaybackTime,
   useStudioPlayer,
 } from "@/components/studio/StudioPlayerContext";
 import { authClient } from "@/lib/auth-client";
+import {
+  downloadAudioFromUrl,
+  slugifyAudioFilename,
+} from "@/lib/download-audio";
 import { userDisplayName } from "@/lib/user-display";
 
 export function StudioPlayerBar() {
@@ -42,6 +48,7 @@ export function StudioPlayerBar() {
   const artistName = userDisplayName(session?.user);
 
   const seekRef = useRef<HTMLDivElement | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   const displayDuration = useMemo(() => {
     if (Number.isFinite(duration) && duration > 0) return duration;
@@ -51,6 +58,11 @@ export function StudioPlayerBar() {
   const progress =
     displayDuration > 0
       ? Math.min(100, (currentTime / displayDuration) * 100)
+      : 0;
+
+  const queuePosition =
+    queue.length > 0 && currentTrack
+      ? queue.findIndex((t) => t.id === currentTrack.id) + 1
       : 0;
 
   const onSeekPointer = useCallback(
@@ -93,6 +105,20 @@ export function StudioPlayerBar() {
     window.addEventListener("touchcancel", onEnd);
   };
 
+  const onDownloadCurrent = useCallback(async () => {
+    const url = currentTrack?.audioUrl;
+    if (!url || !currentTrack) return;
+    setDownloading(true);
+    try {
+      await downloadAudioFromUrl(
+        url,
+        `${slugifyAudioFilename(currentTrack.title)}.mp3`
+      );
+    } finally {
+      setDownloading(false);
+    }
+  }, [currentTrack]);
+
   const repeatIcon =
     repeat === "one" ? (
       <Repeat1 className="h-4 w-4 text-fuchsia-400" />
@@ -122,7 +148,28 @@ export function StudioPlayerBar() {
                     </p>
                     <p className="truncate text-xs text-zinc-500">
                       {artistName}
+                      {queue.length > 1 && queuePosition > 0 ? (
+                        <span className="text-white/35">
+                          {" "}
+                          · {queuePosition}/{queue.length}
+                        </span>
+                      ) : null}
                     </p>
+                    {currentTrack.audioUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => void onDownloadCurrent()}
+                        disabled={downloading}
+                        className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-fuchsia-300/95 hover:text-fuchsia-200 disabled:opacity-50"
+                      >
+                        {downloading ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Download className="h-3 w-3" />
+                        )}
+                        Download MP3
+                      </button>
+                    ) : null}
                   </div>
                 </>
               ) : (
@@ -211,9 +258,9 @@ export function StudioPlayerBar() {
                     seek(Math.max(currentTime - step, 0));
                 }}
               >
-                <div className="h-1 w-full rounded-full bg-white/20">
+                <div className="h-1 w-full rounded-full bg-white/15">
                   <div
-                    className="h-full rounded-full bg-white transition-[width]"
+                    className="h-full rounded-full bg-gradient-to-r from-fuchsia-400/90 to-violet-400/90 transition-[width]"
                     style={{ width: `${progress}%` }}
                   />
                 </div>

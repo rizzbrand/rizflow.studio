@@ -1,6 +1,13 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  title: "Studio",
+  description:
+    "Describe a track, pick length and options, and generate music with Rizflow.",
+};
 
 export default async function CreateLayout({
   children,

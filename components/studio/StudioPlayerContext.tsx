@@ -78,6 +78,7 @@ type StudioPlayerContextValue = {
   hasAudio: boolean;
   setQueue: (tracks: StudioTrack[]) => void;
   playTrack: (track: StudioTrack) => void;
+  pausePlayback: () => void;
   togglePlay: () => void;
   seek: (seconds: number) => void;
   setVolume: (v: number) => void;
@@ -119,7 +120,9 @@ export function StudioPlayerProvider({
     shuffle,
     currentTrack,
   });
-  endedRef.current = { player, repeat, shuffle, currentTrack };
+  useEffect(() => {
+    endedRef.current = { player, repeat, shuffle, currentTrack };
+  });
 
   const setQueue = useCallback((tracks: StudioTrack[]) => {
     dispatch({ type: "SET_QUEUE", tracks });
@@ -130,9 +133,13 @@ export function StudioPlayerProvider({
     setIsPlaying(Boolean(track.audioUrl));
   }, []);
 
+  const pausePlayback = useCallback(() => {
+    setIsPlaying(false);
+  }, []);
+
   useEffect(() => {
     if (!currentTrack?.audioUrl) {
-      setIsPlaying(false);
+      queueMicrotask(() => setIsPlaying(false));
     }
   }, [currentTrack?.id, currentTrack?.audioUrl]);
 
@@ -143,13 +150,15 @@ export function StudioPlayerProvider({
     if (!url) {
       a.pause();
       a.removeAttribute("src");
-      setCurrentTime(0);
-      setDuration(0);
+      queueMicrotask(() => {
+        setCurrentTime(0);
+        setDuration(0);
+      });
       return;
     }
     a.src = url;
     a.volume = volume;
-    setCurrentTime(0);
+    queueMicrotask(() => setCurrentTime(0));
   }, [currentTrack?.id, currentTrack?.audioUrl, volume]);
 
   useEffect(() => {
@@ -282,6 +291,7 @@ export function StudioPlayerProvider({
       hasAudio,
       setQueue,
       playTrack,
+      pausePlayback,
       togglePlay,
       seek,
       setVolume,
@@ -302,6 +312,7 @@ export function StudioPlayerProvider({
       hasAudio,
       setQueue,
       playTrack,
+      pausePlayback,
       togglePlay,
       seek,
       setVolume,

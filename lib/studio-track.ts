@@ -3,6 +3,8 @@ import type { MockTrack } from "@/lib/mock-tracks";
 export type StudioTrack = MockTrack & {
   /** Blob URL for client-generated audio */
   audioUrl?: string;
+  /** Server creation time (ms), when loaded from library API */
+  createdAt?: number;
 };
 
 const gradients = [

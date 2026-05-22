@@ -4,11 +4,12 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Library",
-  description: "Your generated tracks and workspace library.",
+  title: "Studio",
+  description:
+    "Producer desk: record takes, arrangement tools, mix console, and mastering targets in Rizflow.",
 };
 
-export default async function LibraryLayout({
+export default async function StudioRouteLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -18,7 +19,7 @@ export default async function LibraryLayout({
   });
 
   if (!session) {
-    redirect("/sign-in?callbackUrl=%2Flibrary");
+    redirect("/sign-in?callbackUrl=%2Fstudio");
   }
 
   return <>{children}</>;
