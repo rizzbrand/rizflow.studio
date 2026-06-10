@@ -8,12 +8,12 @@ export const STEM_VARIATIONS: {
   {
     id: "six_stems_v1",
     label: "6 stems",
-    description: "Vocals, drums, bass, guitar, piano, and other",
+    description: "Vocals, drums, bass, guitar, piano, and other (Demucs htdemucs_6s)",
   },
   {
     id: "two_stems_v1",
     label: "2 stems",
-    description: "Vocals and instrumental",
+    description: "Vocals and instrumental (Demucs two-stem)",
   },
 ];
 

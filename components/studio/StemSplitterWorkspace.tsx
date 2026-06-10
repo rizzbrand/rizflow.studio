@@ -281,8 +281,8 @@ function StemSplitterContent() {
           </button>
           {status === "splitting" ? (
             <p className="mt-2 text-center text-xs text-white/40">
-              This can take 1–3 minutes depending on track length. Keep this tab
-              open.
+              Demucs on Replicate is processing your track. This can take 30s–3
+              minutes — keep this tab open.
             </p>
           ) : null}
         </section>
@@ -370,7 +370,7 @@ export function StemSplitterWorkspace() {
   return (
     <StudioSubpageShell
       title="Stem splitter"
-      description="Upload a mixed song and isolate vocals, drums, bass, and more. Powered by ElevenLabs stem separation — longer songs can take a few minutes."
+      description="Upload a mixed song and isolate vocals, drums, bass, and more. Powered by Demucs on Replicate — typically 30s–3 min per song."
     >
       <StemSplitterContent />
     </StudioSubpageShell>

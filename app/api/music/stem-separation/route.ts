@@ -1,12 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { put } from "@vercel/blob";
-import JSZip from "jszip";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import Replicate from "replicate";
 import { auth } from "@/lib/auth";
 import {
+  buildDemucsReplicateInput,
+  DEFAULT_REPLICATE_DEMUCS_MODEL,
+  labelFromDemucsField,
+  parseDemucsOutput,
+} from "@/lib/replicate-demucs";
+import {
   MAX_STEM_UPLOAD_BYTES,
-  stemDisplayLabel,
   stemThumbGradient,
   type SeparatedStemResult,
   type StemVariationId,
@@ -14,24 +19,15 @@ import {
 
 export const maxDuration = 300;
 
-const ELEVEN_STEM_URL =
-  "https://api.elevenlabs.io/v1/music/stem-separation?output_format=mp3_44100_128";
-
 function getErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   return String(err);
 }
 
-function parseElevenLabsError(body: unknown): string {
-  if (!body || typeof body !== "object") return "Stem separation failed.";
-  const b = body as Record<string, unknown>;
-  if (typeof b.detail === "string") return b.detail;
-  if (b.detail && typeof b.detail === "object") {
-    const d = b.detail as Record<string, unknown>;
-    if (typeof d.message === "string") return d.message;
-  }
-  if (typeof b.message === "string") return b.message;
-  return "Stem separation failed.";
+function extensionFromUrl(url: string): string {
+  const path = url.split("?")[0] ?? "";
+  const match = path.match(/\.(\w+)$/);
+  return match?.[1] ?? "mp3";
 }
 
 export async function POST(request: Request) {
@@ -53,10 +49,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const apiKey = process.env.ELEVENLABS_API_KEY;
-  if (!apiKey) {
+  const replicateToken = process.env.REPLICATE_API_TOKEN;
+  if (!replicateToken) {
     return NextResponse.json(
-      { error: "Missing ELEVENLABS_API_KEY." },
+      {
+        error:
+          "REPLICATE_API_TOKEN is not configured. Add it in .env.local (from replicate.com/account/api-tokens).",
+      },
       { status: 503 }
     );
   }
@@ -80,7 +79,7 @@ export async function POST(request: Request) {
   const uploadFile =
     file instanceof File
       ? file
-      : new File([file], "upload.mp3", { type: "audio/mpeg" });
+      : new File([file], "track.mp3", { type: "audio/mpeg" });
 
   if (uploadFile.size > MAX_STEM_UPLOAD_BYTES) {
     return NextResponse.json(
@@ -95,56 +94,60 @@ export async function POST(request: Request) {
 
   const userId = String(session.user.id);
   const jobId = randomUUID();
+  const safeName = (uploadFile.name || "track.mp3").replace(/[^\w.-]/g, "_");
 
   try {
-    const elevenForm = new FormData();
-    elevenForm.append("file", uploadFile, uploadFile.name || "track.mp3");
-    elevenForm.append("stem_variation_id", stemVariation);
-
-    const elevenRes = await fetch(ELEVEN_STEM_URL, {
-      method: "POST",
-      headers: {
-        "xi-api-key": apiKey,
-        Accept: "application/zip",
-      },
-      body: elevenForm,
-    });
-
-    if (!elevenRes.ok) {
-      let message = `Stem separation failed (${elevenRes.status}).`;
-      const errText = await elevenRes.text();
-      try {
-        message = parseElevenLabsError(JSON.parse(errText) as unknown);
-      } catch {
-        if (errText) message = errText.slice(0, 500);
+    const sourceBuffer = Buffer.from(await uploadFile.arrayBuffer());
+    const sourceUploaded = await put(
+      `stems/${userId}/${jobId}/source-${safeName}`,
+      sourceBuffer,
+      {
+        access: "public",
+        token: blobToken,
+        contentType: uploadFile.type || "audio/mpeg",
       }
+    );
+
+    const replicate = new Replicate({ auth: replicateToken });
+    const model =
+      process.env.REPLICATE_DEMUCS_MODEL ?? DEFAULT_REPLICATE_DEMUCS_MODEL;
+
+    const input = buildDemucsReplicateInput(
+      sourceUploaded.url,
+      stemVariation
+    );
+
+    const output = await replicate.run(model, { input });
+
+    const stemUrls = parseDemucsOutput(output);
+    if (stemUrls.length === 0) {
       return NextResponse.json(
-        { error: message },
-        { status: elevenRes.status >= 500 ? 502 : 400 }
+        { error: "No stems were returned from Demucs." },
+        { status: 502 }
       );
     }
 
-    const zipBuffer = Buffer.from(await elevenRes.arrayBuffer());
-    const zip = await JSZip.loadAsync(zipBuffer);
-
     const stems: SeparatedStemResult[] = [];
-    const entries = Object.values(zip.files).filter((f) => !f.dir);
 
-    for (const entry of entries) {
-      const filename = entry.name.split("/").pop() ?? entry.name;
-      if (!filename || filename.startsWith(".")) continue;
-
-      const audioBuffer = await entry.async("nodebuffer");
+    for (const { field, url } of stemUrls) {
+      const stemRes = await fetch(url);
+      if (!stemRes.ok) {
+        console.warn(`Failed to fetch stem ${field} from Replicate`);
+        continue;
+      }
+      const audioBuffer = Buffer.from(await stemRes.arrayBuffer());
       if (audioBuffer.length === 0) continue;
 
-      const label = stemDisplayLabel(filename);
+      const ext = extensionFromUrl(url);
+      const label = labelFromDemucsField(field);
+      const filename = `${field}.${ext}`;
       const stemId = randomUUID();
       const pathname = `stems/${userId}/${jobId}/${stemId}-${filename.replace(/[^\w.-]/g, "_")}`;
 
       const uploaded = await put(pathname, audioBuffer, {
         access: "public",
         token: blobToken,
-        contentType: "audio/mpeg",
+        contentType: ext === "wav" ? "audio/wav" : "audio/mpeg",
       });
 
       stems.push({
@@ -158,7 +161,7 @@ export async function POST(request: Request) {
 
     if (stems.length === 0) {
       return NextResponse.json(
-        { error: "No stems were returned from the separation service." },
+        { error: "Could not save stems from separation output." },
         { status: 502 }
       );
     }
