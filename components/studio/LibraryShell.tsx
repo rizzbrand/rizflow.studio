@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { StudioTrack } from "@/lib/studio-track";
 import { StudioPlayerProvider } from "@/components/studio/StudioPlayerContext";
 import { StudioPlayerBar } from "@/components/studio/StudioPlayerBar";
@@ -30,6 +30,13 @@ export function LibraryShell() {
     };
   }, []);
 
+  const addUploadedTrack = useCallback((track: StudioTrack) => {
+    setTracks((prev) => {
+      const withoutDup = prev.filter((t) => t.id !== track.id);
+      return [track, ...withoutDup];
+    });
+  }, []);
+
   return (
     <StudioPlayerProvider>
       <div className="rf-studio-shell flex min-h-[100dvh] flex-col overflow-x-hidden pb-[var(--player-h)] text-[#f4f1ec] lg:h-[calc(100dvh-var(--player-h))] lg:min-h-0 lg:flex-row lg:overflow-hidden lg:pb-0">
@@ -43,6 +50,7 @@ export function LibraryShell() {
             tracks={tracks}
             isLoading={libraryLoading}
             variant="page"
+            onTrackUploaded={addUploadedTrack}
           />
         </main>
       </div>

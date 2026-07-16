@@ -40,13 +40,17 @@ export function StudioShell() {
     };
   }, []);
 
-  const addGeneratedTrack = useCallback((track: StudioTrack) => {
+  const addTrackToLibrary = useCallback((track: StudioTrack) => {
     setTracks((prev) => {
       const withoutDup = prev.filter((t) => t.id !== track.id);
       return [track, ...withoutDup];
     });
-    setStudioInvite(track);
   }, []);
+
+  const addGeneratedTrack = useCallback((track: StudioTrack) => {
+    addTrackToLibrary(track);
+    setStudioInvite(track);
+  }, [addTrackToLibrary]);
 
   return (
     <StudioPlayerProvider>
@@ -112,7 +116,11 @@ export function StudioShell() {
               onGenerated={addGeneratedTrack}
               lengthOptions={MUSIC_LENGTH_OPTIONS_MS}
             />
-            <WorkspaceLibrary tracks={tracks} isLoading={libraryLoading} />
+            <WorkspaceLibrary
+              tracks={tracks}
+              isLoading={libraryLoading}
+              onTrackUploaded={addTrackToLibrary}
+            />
           </div>
         </main>
       </div>

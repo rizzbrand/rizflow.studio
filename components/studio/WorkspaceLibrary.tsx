@@ -18,8 +18,9 @@ import {
   Play,
   ThumbsDown,
   ThumbsUp,
+  Upload,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { StudioTrack } from "@/lib/studio-track";
 import {
   loadTrackReactions,
@@ -33,6 +34,11 @@ import {
   slugifyAudioFilename,
 } from "@/lib/download-audio";
 import { userDisplayName } from "@/lib/user-display";
+import { readAudioDurationMs } from "@/lib/audio-duration";
+import {
+  isAcceptedBeatFile,
+  MAX_BEAT_UPLOAD_BYTES,
+} from "@/lib/studio-beat";
 
 const PAGE_SIZE = 6;
 
@@ -57,6 +63,7 @@ type WorkspaceLibraryProps = {
   isLoading?: boolean;
   /** Full main-area width on `/library`; default is fixed sidebar width on `/create`. */
   variant?: "sidebar" | "page";
+  onTrackUploaded?: (track: StudioTrack) => void;
 };
 
 function buildMockVerse(track: StudioTrack): string[] {
@@ -134,7 +141,10 @@ export function WorkspaceLibrary({
   tracks,
   isLoading = false,
   variant = "sidebar",
+  onTrackUploaded,
 }: WorkspaceLibraryProps) {
+  const uploadInputId = useId();
+  const uploadInputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortMode>("newest");
@@ -145,6 +155,8 @@ export function WorkspaceLibrary({
   const [copiedHint, setCopiedHint] = useState<string | null>(null);
   const [reactions, setReactions] = useState<Record<string, TrackReaction>>({});
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const { setQueue, playTrack, currentTrack, isPlaying } = useStudioPlayer();
@@ -270,6 +282,54 @@ export function WorkspaceLibrary({
     }
   }, []);
 
+  const uploadSong = useCallback(
+    async (file: File) => {
+      if (!isAcceptedBeatFile(file)) {
+        setUploadError("Use MP3, WAV, M4A, FLAC, OGG, or WebM.");
+        return;
+      }
+      if (file.size > MAX_BEAT_UPLOAD_BYTES) {
+        setUploadError("File must be 50 MB or smaller.");
+        return;
+      }
+
+      setUploadError(null);
+      setUploading(true);
+      try {
+        const durationMs = await readAudioDurationMs(file).catch(() => 0);
+        const title = file.name.replace(/\.[^.]+$/, "").trim() || "Uploaded song";
+        const form = new FormData();
+        form.append("file", file);
+        form.append("title", title);
+        form.append("durationMs", String(durationMs));
+
+        const res = await fetch("/api/library/upload", {
+          method: "POST",
+          body: form,
+          credentials: "include",
+        });
+        const data = (await res.json()) as {
+          track?: StudioTrack;
+          error?: string;
+        };
+        if (!res.ok || !data.track) {
+          throw new Error(data.error ?? "Upload failed.");
+        }
+        onTrackUploaded?.(data.track);
+        setActiveId(data.track.id);
+        setPage(0);
+      } catch (err) {
+        setUploadError(
+          err instanceof Error ? err.message : "Could not upload song."
+        );
+      } finally {
+        setUploading(false);
+        if (uploadInputRef.current) uploadInputRef.current.value = "";
+      }
+    },
+    [onTrackUploaded]
+  );
+
   const asideClass =
     variant === "page"
       ? "rf-studio-panel flex min-h-[50vh] w-full min-w-0 flex-1 flex-col lg:min-h-0"
@@ -287,13 +347,43 @@ export function WorkspaceLibrary({
           <h2 className="font-display text-base font-bold text-white">
             {variant === "page" ? "Library" : "Tracks"}
           </h2>
-          {!isLoading ? (
-            <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[11px] font-semibold tabular-nums text-white/60">
-              {tracks.length}{" "}
-              {tracks.length === 1 ? "song" : "songs"}
-            </span>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {!isLoading ? (
+              <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[11px] font-semibold tabular-nums text-white/60">
+                {tracks.length}{" "}
+                {tracks.length === 1 ? "song" : "songs"}
+              </span>
+            ) : null}
+            <input
+              ref={uploadInputRef}
+              id={uploadInputId}
+              type="file"
+              accept="audio/*,.mp3,.wav,.m4a,.flac,.ogg,.webm"
+              className="sr-only"
+              disabled={uploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void uploadSong(file);
+              }}
+            />
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => uploadInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.06] px-2.5 py-1.5 text-[11px] font-semibold text-white/85 transition hover:border-fuchsia-500/35 hover:bg-fuchsia-950/25 hover:text-fuchsia-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {uploading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Upload className="h-3.5 w-3.5" />
+              )}
+              {uploading ? "Uploading…" : "Upload"}
+            </button>
+          </div>
         </div>
+        {uploadError ? (
+          <p className="mt-2 text-xs text-amber-200/90">{uploadError}</p>
+        ) : null}
       </div>
 
       <div className="border-b border-white/[0.06] px-3 py-3">
@@ -626,9 +716,24 @@ export function WorkspaceLibrary({
                 </p>
                 <p className="mt-1 max-w-[16rem] text-sm text-white/45">
                   {tracks.length === 0 && !query.trim()
-                    ? "Describe a track in Create and it will appear here."
+                    ? "Generate a track in Create or upload an MP3, WAV, or M4A."
                     : "Try a different search term."}
                 </p>
+                {tracks.length === 0 && !query.trim() ? (
+                  <button
+                    type="button"
+                    disabled={uploading}
+                    onClick={() => uploadInputRef.current?.click()}
+                    className="mt-1 inline-flex items-center gap-1.5 rounded-xl border border-fuchsia-500/35 bg-fuchsia-950/25 px-3 py-2 text-xs font-semibold text-fuchsia-100 transition hover:border-fuchsia-400/45 hover:bg-fuchsia-900/35 disabled:opacity-50"
+                  >
+                    {uploading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="h-3.5 w-3.5" />
+                    )}
+                    Upload a song
+                  </button>
+                ) : null}
               </div>
             </div>
           ) : null}

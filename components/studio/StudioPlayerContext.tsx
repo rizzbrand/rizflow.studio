@@ -113,6 +113,17 @@ export function StudioPlayerProvider({
 
   const currentTrack = player.current;
   const hasAudio = Boolean(currentTrack?.audioUrl);
+  const playerBarVisible = hasAudio;
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--player-h",
+      playerBarVisible ? "5.5rem" : "0px"
+    );
+    return () => {
+      document.documentElement.style.setProperty("--player-h", "5.5rem");
+    };
+  }, [playerBarVisible]);
 
   const endedRef = useRef({
     player,

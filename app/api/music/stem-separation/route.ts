@@ -6,9 +6,9 @@ import Replicate from "replicate";
 import { auth } from "@/lib/auth";
 import {
   buildDemucsReplicateInput,
-  DEFAULT_REPLICATE_DEMUCS_MODEL,
-  labelFromDemucsField,
   parseDemucsOutput,
+  labelFromDemucsField,
+  resolveDemucsModel,
 } from "@/lib/replicate-demucs";
 import {
   MAX_STEM_UPLOAD_BYTES,
@@ -109,8 +109,7 @@ export async function POST(request: Request) {
     );
 
     const replicate = new Replicate({ auth: replicateToken });
-    const model =
-      process.env.REPLICATE_DEMUCS_MODEL ?? DEFAULT_REPLICATE_DEMUCS_MODEL;
+    const model = resolveDemucsModel();
 
     const input = buildDemucsReplicateInput(
       sourceUploaded.url,

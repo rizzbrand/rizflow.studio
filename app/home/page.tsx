@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
+import { DashboardHome } from "@/components/studio/DashboardHome";
 
-/** Legacy URL; the create workspace lives at `/create`. */
-export default function HomeRedirectPage() {
-  redirect("/create");
+export default function HomePage() {
+  return <DashboardHome />;
 }

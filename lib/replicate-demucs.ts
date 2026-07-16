@@ -1,8 +1,19 @@
 import type { StemVariationId } from "@/lib/stem-separation";
 
+/** Replicate model ref: `owner/name` or `owner/name:version` */
+export type ReplicateModelRef =
+  | `${string}/${string}`
+  | `${string}/${string}:${string}`;
+
 /** Pinned cjwbw/demucs version — override with REPLICATE_DEMUCS_MODEL if needed */
 export const DEFAULT_REPLICATE_DEMUCS_MODEL =
-  "cjwbw/demucs:abf8fe28e407afa6d8e41e86a759caccc0af8e49c3c68016006b62cb0968441e";
+  "cjwbw/demucs:abf8fe28e407afa6d8e41e86a759caccc0af8e49c3c68016006b62cb0968441e" as ReplicateModelRef;
+
+export function resolveDemucsModel(): ReplicateModelRef {
+  const fromEnv = process.env.REPLICATE_DEMUCS_MODEL?.trim();
+  if (fromEnv) return fromEnv as ReplicateModelRef;
+  return DEFAULT_REPLICATE_DEMUCS_MODEL;
+}
 
 export type DemucsReplicateInput = {
   audio: string;

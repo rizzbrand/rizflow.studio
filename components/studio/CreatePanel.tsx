@@ -9,6 +9,8 @@ import {
   Wand2,
 } from "lucide-react";
 import { useCallback, useId, useEffect, useRef, useState } from "react";
+import { useCredits } from "@/components/studio/credits/useCredits";
+import { formatCredits } from "@/lib/credits-shared";
 import { inspirationChips } from "@/lib/mock-tracks";
 import type { StudioTrack } from "@/lib/studio-track";
 
@@ -28,6 +30,7 @@ type CreatePanelProps = {
 };
 
 export function CreatePanel({ onGenerated, lengthOptions }: CreatePanelProps) {
+  const { balance: creditBalance } = useCredits();
   const headingId = useId();
   const [mode, setMode] = useState<"simple" | "advanced">("simple");
   const [instrumental, setInstrumental] = useState(false);
@@ -146,7 +149,7 @@ export function CreatePanel({ onGenerated, lengthOptions }: CreatePanelProps) {
               Credits
             </span>
             <span className="rounded-md bg-white/[0.08] px-2 py-0.5 text-sm font-bold tabular-nums text-white">
-              40
+              {formatCredits(creditBalance)}
             </span>
           </div>
 

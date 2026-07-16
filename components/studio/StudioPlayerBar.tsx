@@ -128,6 +128,10 @@ export function StudioPlayerBar() {
       />
     );
 
+  if (!currentTrack?.audioUrl) {
+    return null;
+  }
+
   return (
     <footer className="rf-player-bar fixed bottom-0 left-0 right-0 z-50 w-full border-t border-white/[0.08]">
       <div className="flex min-h-[var(--player-h)] w-full flex-col justify-center gap-3 px-4 py-3 sm:h-[var(--player-h)] sm:flex-row sm:items-center sm:gap-0 sm:px-6 sm:py-0 lg:px-10">
@@ -136,45 +140,37 @@ export function StudioPlayerBar() {
           {/* Left — track */}
           <div className="min-w-0 justify-self-start sm:pr-2">
             <div className="flex min-h-[3rem] max-w-full items-center gap-3 sm:min-h-0">
-              {currentTrack ? (
-                <>
-                  <div
-                    className={`relative h-12 w-12 shrink-0 overflow-hidden rounded bg-gradient-to-br shadow-inner ring-1 ring-white/10 sm:h-[52px] sm:w-[52px] ${currentTrack.thumbGradient}`}
-                    aria-hidden
-                  />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-white">
-                      {currentTrack.title}
-                    </p>
-                    <p className="truncate text-xs text-zinc-500">
-                      {artistName}
-                      {queue.length > 1 && queuePosition > 0 ? (
-                        <span className="text-white/35">
-                          {" "}
-                          · {queuePosition}/{queue.length}
-                        </span>
-                      ) : null}
-                    </p>
-                    {currentTrack.audioUrl ? (
-                      <button
-                        type="button"
-                        onClick={() => void onDownloadCurrent()}
-                        disabled={downloading}
-                        className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-fuchsia-300/95 hover:text-fuchsia-200 disabled:opacity-50"
-                      >
-                        {downloading ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Download className="h-3 w-3" />
-                        )}
-                        Download MP3
-                      </button>
-                    ) : null}
-                  </div>
-                </>
-              ) : (
-                <p className="text-sm text-white/40">Nothing playing</p>
-              )}
+              <div
+                className={`relative h-12 w-12 shrink-0 overflow-hidden rounded bg-gradient-to-br shadow-inner ring-1 ring-white/10 sm:h-[52px] sm:w-[52px] ${currentTrack.thumbGradient}`}
+                aria-hidden
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-white">
+                  {currentTrack.title}
+                </p>
+                <p className="truncate text-xs text-zinc-500">
+                  {artistName}
+                  {queue.length > 1 && queuePosition > 0 ? (
+                    <span className="text-white/35">
+                      {" "}
+                      · {queuePosition}/{queue.length}
+                    </span>
+                  ) : null}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void onDownloadCurrent()}
+                  disabled={downloading}
+                  className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-fuchsia-300/95 hover:text-fuchsia-200 disabled:opacity-50"
+                >
+                  {downloading ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Download className="h-3 w-3" />
+                  )}
+                  Download MP3
+                </button>
+              </div>
             </div>
           </div>
 
