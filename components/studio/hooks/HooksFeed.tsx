@@ -32,6 +32,7 @@ import {
 } from "@/lib/lyrics-sync";
 import type { CreditTaskId } from "@/lib/credits-shared";
 import { earnCreditsOnServer } from "@/components/studio/credits/useCredits";
+import { pauseActiveMedia, shareUrl } from "@/lib/share-url";
 
 function tryAwardCredits(taskId: CreditTaskId) {
   void earnCreditsOnServer(taskId);
@@ -45,6 +46,7 @@ export function HooksFeed({ initialHookId }: HooksFeedProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<(HTMLElement | null)[]>([]);
   const viewedRef = useRef<Set<string>>(new Set());
+  const sharingRef = useRef(false);
 
   const [hooks, setHooks] = useState<HookFeedItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +54,7 @@ export function HooksFeed({ initialHookId }: HooksFeedProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [muted, setMuted] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
   const [commentsOpen, setCommentsOpen] = useState(false);
 
   const loadHooks = useCallback(async () => {
@@ -266,19 +269,34 @@ export function HooksFeed({ initialHookId }: HooksFeedProps) {
   };
 
   const shareHook = async (hook: HookFeedItem) => {
-    const url = `${window.location.origin}/hooks?hook=${hook.id}`;
+    if (sharingRef.current) return;
+    sharingRef.current = true;
+    setActionError(null);
+    setShareFeedback(null);
+    pauseActiveMedia();
+
+    const url = `${window.location.origin}/hooks?hook=${encodeURIComponent(hook.id)}`;
     const text = `${hook.title} by ${hook.creatorDisplayName}`;
+
     try {
-      if (navigator.share) {
-        await navigator.share({ title: hook.title, text, url });
+      const result = await shareUrl({
+        url,
+        title: hook.title,
+        text,
+      });
+
+      if (result === "shared" || result === "copied") {
         tryAwardCredits("share_hook");
-        return;
       }
-      await navigator.clipboard.writeText(url);
-      setActionError(null);
-      tryAwardCredits("share_hook");
-    } catch {
-      /* user cancelled share */
+      if (result === "copied") {
+        setShareFeedback("Link copied");
+        window.setTimeout(() => setShareFeedback(null), 2500);
+      }
+      if (result === "failed") {
+        setActionError("Could not share this hook.");
+      }
+    } finally {
+      sharingRef.current = false;
     }
   };
 
@@ -485,6 +503,12 @@ export function HooksFeed({ initialHookId }: HooksFeedProps) {
       {actionError ? (
         <p className="absolute bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-full bg-black/80 px-4 py-2 text-xs text-white/80">
           {actionError}
+        </p>
+      ) : null}
+
+      {shareFeedback ? (
+        <p className="absolute bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-full bg-emerald-950/90 px-4 py-2 text-xs text-emerald-100">
+          {shareFeedback}
         </p>
       ) : null}
 

@@ -38,13 +38,13 @@ const quickLinks: { href: string; label: string; icon: LucideIcon }[] = [
 const nav = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/hooks", label: "Explore", icon: Compass },
-  { href: "/uplink", label: "Uplink", icon: Radio },
+  { href: "/uplink", label: "Uplink chat", icon: Radio },
   { href: "/create", label: "Create", icon: FileMusic },
   { href: "/studio", label: "Studio", icon: Mic },
   { href: "/studio/artist-assistant", label: "Artist assistant", icon: ScanFace },
   { href: "/studio/viral-content", label: "Viral content", icon: TrendingUp },
   { href: "/studio/stem-splitter", label: "Stem splitter", icon: Scissors },
-  { href: "/studio/music-to-video", label: "Music to video", icon: Clapperboard },
+  { href: "/studio/music-to-video", label: "Rizflow AI", icon: Clapperboard },
   { href: "/library", label: "Library", icon: Library },
 ] as const;
 
