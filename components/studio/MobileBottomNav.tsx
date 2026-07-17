@@ -69,6 +69,7 @@ export function MobileBottomNav() {
       <div className="rf-liquid-dock pointer-events-auto w-full max-w-[23.5rem] sm:max-w-[25rem]">
         {/* Frost layer — samples page content behind the dock */}
         <div className="rf-liquid-dock__frost" aria-hidden />
+        <div className="rf-liquid-dock__veil" aria-hidden />
         <div className="rf-liquid-dock__shine" aria-hidden />
 
         <ul className="rf-liquid-dock__items relative z-[1] flex items-stretch justify-between gap-0.5 px-1.5 py-1.5 sm:px-2 sm:py-2">
@@ -80,7 +81,7 @@ export function MobileBottomNav() {
                 <Link
                   href={item.href}
                   className={`relative flex flex-col items-center gap-0.5 rounded-xl px-0.5 py-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${
-                    active ? "text-white" : "text-white/55 hover:text-white/85"
+                    active ? "text-white" : "text-white/70 hover:text-white/90"
                   }`}
                   aria-current={active ? "page" : undefined}
                 >
@@ -98,7 +99,7 @@ export function MobileBottomNav() {
                   </span>
                   <span
                     className={`truncate text-[10px] font-semibold tracking-wide ${
-                      active ? "text-white" : "text-white/50"
+                      active ? "text-white" : "text-white/68"
                     }`}
                   >
                     {item.label}

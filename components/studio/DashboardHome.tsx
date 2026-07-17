@@ -195,7 +195,7 @@ function DashboardFrame() {
             </div>
           </SpatialBubbleCard>
 
-          {/* Tools — single-column stack on phones, grid from sm up */}
+          {/* Tools — 2-up on mobile, wider grid on desktop */}
           <section aria-label="Studio tools" className="space-y-3">
             <div className="flex items-end justify-between gap-3 px-0.5">
               <div>
@@ -208,7 +208,7 @@ function DashboardFrame() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
               {featureCards.map((card) => {
                 const Icon = card.icon;
                 return (
@@ -218,18 +218,18 @@ function DashboardFrame() {
                     variant="panel"
                     className="h-full"
                   >
-                    <div className="flex h-full flex-col p-4 sm:p-5">
-                      <div className="flex items-start gap-3 sm:flex-col sm:items-stretch sm:gap-0">
+                    <div className="flex h-full flex-col p-3 sm:p-5">
+                      <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-0">
                         <div
-                          className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-gradient-to-br shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] sm:mb-4 sm:h-11 sm:w-11 ${card.glowClass}`}
+                          className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-gradient-to-br shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] sm:mb-4 sm:h-11 sm:w-11 sm:rounded-2xl ${card.glowClass}`}
                         >
-                          <Icon className={`h-5 w-5 ${card.iconClass}`} />
+                          <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.iconClass}`} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-display text-base font-semibold text-white sm:text-lg">
+                          <h3 className="font-display text-sm font-semibold leading-snug text-white sm:text-lg">
                             {card.title}
                           </h3>
-                          <p className="mt-1 text-xs leading-relaxed text-white/45 sm:hidden">
+                          <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-white/45 sm:hidden">
                             {card.bullets[0]}
                           </p>
                           <ul className="mt-3 hidden flex-1 space-y-2 sm:block">
@@ -247,7 +247,7 @@ function DashboardFrame() {
                       </div>
                       <Link
                         href={card.href}
-                        className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-600/95 to-violet-600/95 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 sm:mt-5"
+                        className="mt-2.5 inline-flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-fuchsia-600/95 to-violet-600/95 px-2 py-2 text-[11px] font-semibold leading-tight text-white transition hover:brightness-110 sm:mt-5 sm:rounded-xl sm:py-2.5 sm:text-sm"
                       >
                         {card.cta}
                       </Link>

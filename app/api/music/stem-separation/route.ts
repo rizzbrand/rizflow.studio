@@ -9,6 +9,7 @@ import {
   parseDemucsOutput,
   labelFromDemucsField,
   resolveDemucsModel,
+  type ReplicateModelRef,
 } from "@/lib/replicate-demucs";
 import {
   MAX_STEM_UPLOAD_BYTES,
@@ -109,7 +110,7 @@ export async function POST(request: Request) {
     );
 
     const replicate = new Replicate({ auth: replicateToken });
-    const model = resolveDemucsModel();
+    const model: ReplicateModelRef = resolveDemucsModel();
 
     const input = buildDemucsReplicateInput(
       sourceUploaded.url,
