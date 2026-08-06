@@ -6,27 +6,39 @@ import {
   getServerCreditBalance,
   InsufficientCreditsError,
 } from "@/lib/credits";
+import { notifyReferralStudioUse } from "@/lib/referrals";
 import {
   buildPolloAnimatedCoverPrompt,
+  buildPolloImageInput,
+  buildPolloImagePrompt,
   buildPolloMusicVideoPrompt,
   buildPolloVideoInput,
   createPolloGeneration,
+  createPolloImageGeneration,
   getPolloErrorMessage,
   isPolloConfigured,
   uploadPolloReferenceImage,
 } from "@/lib/pollo";
-import { estimatePolloCredits } from "@/lib/pollo-pricing";
+import {
+  estimatePolloCredits,
+  estimatePolloImageCredits,
+} from "@/lib/pollo-pricing";
 import {
   clampPolloLength,
+  DEFAULT_POLLO_IMAGE_MODEL,
   DEFAULT_POLLO_MODEL,
   MAX_POLLO_IMAGE_BYTES,
+  polloImageModel,
   polloModel,
   runwayRatioToPolloAspect,
+  type PolloGenerationMode,
+  type PolloImageModelId,
+  type PolloImageResolution,
   type PolloModelId,
   type PolloResolution,
-  type PolloVideoMode,
 } from "@/lib/pollo-shared";
 import type { MusicVideoStyleId } from "@/lib/runway-shared";
+import { MUSIC_VIDEO_STYLES } from "@/lib/runway-shared";
 
 export const maxDuration = 60;
 
@@ -61,26 +73,152 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid form data." }, { status: 400 });
   }
 
-  const mode = String(form.get("mode") ?? "") as PolloVideoMode;
-  if (mode !== "music-video" && mode !== "animated-cover") {
+  const mode = String(form.get("mode") ?? "") as PolloGenerationMode;
+  if (
+    mode !== "music-video" &&
+    mode !== "animated-cover" &&
+    mode !== "playlist-aesthetic"
+  ) {
     return NextResponse.json({ error: "Invalid generation mode." }, { status: 400 });
-  }
-
-  const modelId = (String(form.get("model") ?? DEFAULT_POLLO_MODEL) ||
-    DEFAULT_POLLO_MODEL) as PolloModelId;
-  const model = polloModel(modelId);
-  if (!model) {
-    return NextResponse.json({ error: "Unknown Pollo model." }, { status: 400 });
   }
 
   const ratio = String(form.get("ratio") ?? "1280:720");
   const aspectRatio = runwayRatioToPolloAspect(ratio);
-  const duration = parseLength(form.get("duration") as string | null, model.lengths);
-  const resolution = (String(form.get("resolution") ?? "720p") ||
-    "720p") as PolloResolution;
   const userId = String(session.user.id);
 
   try {
+    if (mode === "playlist-aesthetic") {
+      const vibe = String(form.get("vibe") ?? form.get("scenePrompt") ?? "").trim();
+      if (!vibe) {
+        return NextResponse.json(
+          { error: "Describe the image you want to generate." },
+          { status: 400 }
+        );
+      }
+
+      const modelId = (String(form.get("model") ?? DEFAULT_POLLO_IMAGE_MODEL) ||
+        DEFAULT_POLLO_IMAGE_MODEL) as PolloImageModelId;
+      const model = polloImageModel(modelId);
+      if (!model) {
+        return NextResponse.json(
+          { error: "Unknown Pollo image model." },
+          { status: 400 }
+        );
+      }
+
+      const title = String(form.get("playlistName") ?? "").trim();
+      const genres = String(form.get("genres") ?? "").trim();
+      const visualStyle = (String(form.get("visualStyle") ?? "") ||
+        "") as MusicVideoStyleId | "";
+      const styleLabel =
+        genres ||
+        MUSIC_VIDEO_STYLES.find((s) => s.id === visualStyle)?.label ||
+        undefined;
+      const resolution = (String(form.get("resolution") ?? "1K") ||
+        "1K") as PolloImageResolution;
+
+      const referenceImage = form.get("referenceImage");
+      const hasImage =
+        referenceImage instanceof Blob && referenceImage.size > 0;
+
+      if (hasImage && referenceImage.size > MAX_POLLO_IMAGE_BYTES) {
+        return NextResponse.json(
+          { error: "Reference image must be 10 MB or smaller." },
+          { status: 400 }
+        );
+      }
+
+      const credits = estimatePolloImageCredits({
+        model: modelId,
+        resolution: model.supportsResolution ? resolution : "1K",
+        hasImage,
+      });
+
+      const balance = await getServerCreditBalance(userId);
+      if (balance < credits) {
+        return NextResponse.json(
+          {
+            error: `Not enough credits. This generation costs ${credits} credits.`,
+            creditsRequired: credits,
+            balance,
+          },
+          { status: 402 }
+        );
+      }
+
+      let imageUrl: string | null = null;
+      if (hasImage) {
+        const buffer = Buffer.from(await referenceImage.arrayBuffer());
+        const mime =
+          referenceImage.type ||
+          (referenceImage instanceof File ? "image/jpeg" : "image/jpeg");
+        imageUrl = await uploadPolloReferenceImage(buffer, mime, userId);
+      }
+
+      const prompt = buildPolloImagePrompt({
+        idea: vibe,
+        title: title || undefined,
+        styleLabel,
+      });
+
+      const input = buildPolloImageInput({
+        modelId,
+        prompt,
+        aspectRatio,
+        resolution,
+        imageUrl,
+        style: styleLabel,
+      });
+
+      const task = await createPolloImageGeneration(modelId, input);
+      if (!task?.taskId) {
+        return NextResponse.json(
+          {
+            error:
+              "Pollo did not return a task id. Your Pollo account may still have been charged — check Pollo logs.",
+          },
+          { status: 502 }
+        );
+      }
+      try {
+        const balanceAfter = await deductCredits(userId, credits, {
+          taskId: task.taskId,
+          mode: "pollo:playlist-aesthetic",
+        });
+        void notifyReferralStudioUse(userId).catch(() => {});
+        return NextResponse.json({
+          taskId: task.taskId,
+          kind: "image" as const,
+          provider: "pollo",
+          creditsCharged: credits,
+          balance: balanceAfter,
+        });
+      } catch (chargeErr) {
+        if (chargeErr instanceof InsufficientCreditsError) {
+          return NextResponse.json(
+            {
+              error: chargeErr.message,
+              creditsRequired: credits,
+              balance: chargeErr.balance,
+            },
+            { status: 402 }
+          );
+        }
+        throw chargeErr;
+      }
+    }
+
+    const modelId = (String(form.get("model") ?? DEFAULT_POLLO_MODEL) ||
+      DEFAULT_POLLO_MODEL) as PolloModelId;
+    const model = polloModel(modelId);
+    if (!model) {
+      return NextResponse.json({ error: "Unknown Pollo model." }, { status: 400 });
+    }
+
+    const duration = parseLength(form.get("duration") as string | null, model.lengths);
+    const resolution = (String(form.get("resolution") ?? "720p") ||
+      "720p") as PolloResolution;
+
     if (mode === "music-video") {
       const scenePrompt = String(form.get("scenePrompt") ?? "").trim();
       if (!scenePrompt) {
@@ -167,6 +305,7 @@ export async function POST(request: Request) {
           taskId: task.taskId,
           mode: `pollo:${mode}`,
         });
+        void notifyReferralStudioUse(userId).catch(() => {});
         return NextResponse.json({
           taskId: task.taskId,
           kind: "video" as const,
@@ -255,6 +394,7 @@ export async function POST(request: Request) {
         taskId: task.taskId,
         mode: "pollo:animated-cover",
       });
+      void notifyReferralStudioUse(userId).catch(() => {});
       return NextResponse.json({
         taskId: task.taskId,
         kind: "video" as const,

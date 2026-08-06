@@ -5,6 +5,8 @@ export type MockTrack = {
   model: string;
   tags: string[];
   thumbGradient: string;
+  /** Optional cover art URL (library uploads) */
+  coverUrl?: string | null;
   preview?: boolean;
 };
 

@@ -40,6 +40,7 @@ import {
   StudioDeskTabList,
   type StudioDeskTab,
 } from "@/components/studio/StudioProducerTools";
+import { StemSplitterContent } from "@/components/studio/StemSplitterWorkspace";
 import {
   StudioAudioIODevicePanel,
   useStudioAudioIO,
@@ -156,6 +157,7 @@ function StudioRecordingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const trackQuery = searchParams.get("track")?.trim() ?? "";
+  const tabQuery = searchParams.get("tab")?.trim().toLowerCase() ?? "";
 
   const { playTrack, setQueue, pausePlayback, currentTrack, isPlaying } =
     useStudioPlayer();
@@ -191,7 +193,27 @@ function StudioRecordingContent() {
   const [previewMixing, setPreviewMixing] = useState(false);
   const [previewTakeId, setPreviewTakeId] = useState<string | null>(null);
 
-  const [deskTab, setDeskTab] = useState<StudioDeskTab>("produce");
+  const [deskTab, setDeskTab] = useState<StudioDeskTab>(() =>
+    tabQuery === "stems" || tabQuery === "stem" || tabQuery === "splitter"
+      ? "stems"
+      : tabQuery === "mix"
+        ? "mix"
+        : tabQuery === "master"
+          ? "master"
+          : "produce"
+  );
+
+  useEffect(() => {
+    if (tabQuery === "stems" || tabQuery === "stem" || tabQuery === "splitter") {
+      setDeskTab("stems");
+    } else if (tabQuery === "mix") {
+      setDeskTab("mix");
+    } else if (tabQuery === "master") {
+      setDeskTab("master");
+    } else if (tabQuery === "produce") {
+      setDeskTab("produce");
+    }
+  }, [tabQuery]);
 
   const [takes, setTakes] = useState<Take[]>([]);
   const [takesLoading, setTakesLoading] = useState(true);
@@ -932,7 +954,9 @@ function StudioRecordingContent() {
                   ? "Produce"
                   : deskTab === "mix"
                     ? "Mix"
-                    : "Master"
+                    : deskTab === "master"
+                      ? "Master"
+                      : "Stem splitter"
               }
             >
               {deskTab === "produce" ? (
@@ -1375,6 +1399,7 @@ function StudioRecordingContent() {
                 />
               ) : null}
               {deskTab === "master" ? <MasterWorkspace /> : null}
+              {deskTab === "stems" ? <StemSplitterContent /> : null}
             </div>
           </div>
 

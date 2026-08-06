@@ -1,21 +1,30 @@
 "use client";
 
 import { authClient } from "@/lib/auth-client";
+import {
+  flushPendingReferral,
+  stashReferralCode,
+} from "@/lib/referral-client";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function SignUpForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/create";
+  const refCode = searchParams.get("ref");
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    stashReferralCode(refCode);
+  }, [refCode]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,6 +41,7 @@ export function SignUpForm() {
         setError(err.message ?? "Sign up failed");
         return;
       }
+      await flushPendingReferral();
       router.push(callbackUrl);
       router.refresh();
     } finally {
@@ -43,6 +53,7 @@ export function SignUpForm() {
     setError(null);
     setLoading(true);
     try {
+      stashReferralCode(refCode);
       await authClient.signIn.social({
         provider: "google",
         callbackURL: callbackUrl,
@@ -59,6 +70,11 @@ export function SignUpForm() {
         <h1 className="text-2xl font-semibold text-white">Create account</h1>
         <p className="mt-1 text-sm text-white/50">
           Sign up to generate and save tracks in Rizflow Studio.
+          {refCode ? (
+            <span className="mt-1 block text-amber-200/80">
+              You were invited — finish signup to join your friend&apos;s squad.
+            </span>
+          ) : null}
         </p>
       </div>
 

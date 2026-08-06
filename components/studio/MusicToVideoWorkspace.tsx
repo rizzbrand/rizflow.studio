@@ -16,7 +16,7 @@ export function MusicToVideoWorkspace() {
             <Sparkles className="h-5 w-5 text-white/70" aria-hidden />
           </h2>
           <p className="mt-2 max-w-md text-sm text-white/40">
-            Music videos, animated covers, and playlist aesthetics
+            Music videos, animated covers, and image generations
           </p>
         </div>
 

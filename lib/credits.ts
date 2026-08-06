@@ -18,6 +18,8 @@ type CreditAccountDoc = {
   userId: string;
   balance: number;
   daily: DailyState;
+  /** One-time / milestone award keys already paid out */
+  awards?: Record<string, number>;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -244,4 +246,74 @@ export async function settleCreditHold(taskId: string): Promise<void> {
     { taskId, status: "pending" },
     { $set: { status: "settled", updatedAt: new Date() } }
   );
+}
+
+/**
+ * Grant credits once per awardKey (milestones, referral bonuses, etc.).
+ * Returns awarded=0 if this key was already paid.
+ */
+export async function grantCreditsOnce(
+  userId: string,
+  awardKey: string,
+  amount: number
+): Promise<{ awarded: number; newBalance: number; alreadyAwarded: boolean }> {
+  const points = Math.max(0, Math.floor(amount));
+  const account = await ensureCreditAccount(userId);
+  if (!points) {
+    return {
+      awarded: 0,
+      newBalance: account.balance,
+      alreadyAwarded: false,
+    };
+  }
+
+  if (account.awards?.[awardKey] !== undefined) {
+    return {
+      awarded: 0,
+      newBalance: account.balance,
+      alreadyAwarded: true,
+    };
+  }
+
+  const db = getMongoDb();
+  const col = db.collection<CreditAccountDoc>(ACCOUNTS);
+  const newBalance = account.balance + points;
+
+  const updated = await col.findOneAndUpdate(
+    {
+      userId,
+      [`awards.${awardKey}`]: { $exists: false },
+    },
+    {
+      $inc: { balance: points },
+      $set: {
+        [`awards.${awardKey}`]: points,
+        updatedAt: new Date(),
+      },
+    },
+    { returnDocument: "after" }
+  );
+
+  if (!updated) {
+    const latest = await ensureCreditAccount(userId);
+    return {
+      awarded: 0,
+      newBalance: latest.balance,
+      alreadyAwarded: true,
+    };
+  }
+
+  return {
+    awarded: points,
+    newBalance: updated.balance,
+    alreadyAwarded: false,
+  };
+}
+
+export async function hasCreditAward(
+  userId: string,
+  awardKey: string
+): Promise<boolean> {
+  const account = await ensureCreditAccount(userId);
+  return account.awards?.[awardKey] !== undefined;
 }

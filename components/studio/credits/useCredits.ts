@@ -7,6 +7,7 @@ import {
   getCreditBalance as getLocalCreditBalance,
   notifyCreditsChanged,
 } from "@/lib/credits-ui-storage";
+import { flushPendingReferral } from "@/lib/referral-client";
 
 type CreditsState = {
   balance: number;
@@ -20,6 +21,8 @@ export function useCredits() {
 
   const refresh = useCallback(async () => {
     try {
+      await flushPendingReferral();
+
       const localBalance = getLocalCreditBalance();
       const synced =
         typeof window !== "undefined" &&

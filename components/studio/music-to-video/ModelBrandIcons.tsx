@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Gem } from "lucide-react";
-import type { PolloModelId } from "@/lib/pollo-shared";
+import type { PolloImageModelId, PolloModelId } from "@/lib/pollo-shared";
 import type { RunwayMusicVideoModelId } from "@/lib/runway-shared";
 
 export type ModelBrand =
@@ -29,6 +29,12 @@ export function brandForPolloModel(id: PolloModelId): ModelBrand {
   return "pollo";
 }
 
+export function brandForPolloImageModel(id: PolloImageModelId): ModelBrand {
+  if (id.startsWith("nano-banana")) return "google";
+  if (id.startsWith("gpt-image")) return "openai";
+  return "pollo";
+}
+
 export function brandForRunwayModel(id: RunwayMusicVideoModelId): ModelBrand {
   if (id.startsWith("veo")) return "google";
   if (id.startsWith("seedance")) return "seedance";
@@ -44,6 +50,14 @@ export function isNewPolloModel(id: PolloModelId): boolean {
     id === "sora-2-pro" ||
     id === "wan-v2-6" ||
     id === "vidu-q3-pro"
+  );
+}
+
+export function isNewPolloImageModel(id: PolloImageModelId): boolean {
+  return (
+    id === "nano-banana-pro" ||
+    id === "pollojourney-v8-1" ||
+    id === "gpt-image-2"
   );
 }
 
@@ -160,9 +174,13 @@ export function ModelBrandIcon({
       return shell(<Gem className={className} strokeWidth={1.75} />);
     case "openai":
       return shell(
-        <svg viewBox="0 0 24 24" className={className} fill="currentColor">
-          <path d="M12.4 3.1c.9-.5 2-.5 2.9 0l1.1.6c.3.2.3.6 0 .8l-1.2.7c-.2.1-.5 0-.6-.2l-.3-.5c-.3-.5-.9-.7-1.4-.4-.6.3-.8.9-.5 1.4l.3.5c.1.2 0 .5-.2.6l-1.2.7c-.3.2-.7.1-.8-.2l-.6-1.1c-.5-.9-.5-2 0-2.9l1.5-2.5Zm-5.7 3.3c.5-.9 1.5-1.4 2.5-1.4h1.2c.3 0 .6.3.6.6v1.4c0 .2-.1.4-.3.5h-.6c-.6 0-1.1.3-1.4.8-.3.5-.2 1.2.2 1.6l.5.4c.2.1.2.4.1.6l-.7 1.2c-.2.3-.5.4-.8.2l-1.1-.6c-.9-.5-1.4-1.5-1.4-2.5l.2-2.8Zm-.2 7.1c-.5-.9-.5-2 0-2.9l.6-1.1c.2-.3.5-.4.8-.2l1.2.7c.2.1.3.4.2.6l-.3.5c-.3.5-.2 1.1.3 1.4.5.3 1.1.2 1.4-.3l.3-.5c.1-.2.4-.3.6-.2l1.2.7c.3.2.4.5.2.8l-.6 1.1c-.5.9-1.5 1.4-2.5 1.4l-2.8-.2Zm8.1 3.2c-.9.5-2 .5-2.9 0l-1.1-.6c-.3-.2-.3-.6 0-.8l1.2-.7c.2-.1.5 0 .6.2l.3.5c.3.5.9.7 1.4.4.6-.3.8-.9.5-1.4l-.3-.5c-.1-.2 0-.5.2-.6l1.2-.7c.3-.2.7-.1.8.2l.6 1.1c.5.9.5 2 0 2.9l-1.5 2.5Zm2.8-5.6c.5.9.5 2 0 2.9l-.6 1.1c-.2.3-.5.4-.8.2l-1.2-.7c-.2-.1-.3-.4-.2-.6l.3-.5c.3-.5.2-1.1-.3-1.4-.5-.3-1.1-.2-1.4.3l-.3.5c-.1.2-.4.3-.6.2l-1.2-.7c-.3-.2-.4-.5-.2-.8l.6-1.1c.5-.9 1.5-1.4 2.5-1.4l2.8.2Zm-2.6-5.1c.9-.5 2-.2 2.6.6l.8 1c.2.3.1.6-.2.8l-1.2.7c-.2.1-.5 0-.6-.2l-.4-.5c-.3-.5-.9-.7-1.4-.4-.5.3-.7.9-.4 1.4l.4.5c.1.2 0 .5-.2.6l-1.2.7c-.3.2-.7.1-.8-.2l-.8-1c-.6-.9-.4-2 .5-2.6l2.5-1.4Z" />
-        </svg>
+        // eslint-disable-next-line @next/next/no-img-element -- brand asset from /public
+        <img
+          src="/brands/chatgpt.png"
+          alt=""
+          className={`${className} object-contain brightness-0 invert`}
+          draggable={false}
+        />
       );
     case "luma":
       return shell(

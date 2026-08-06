@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Share2,
   Sparkles,
+  Trash2,
   Volume2,
   VolumeX,
   type LucideIcon,
@@ -49,6 +50,7 @@ export function HooksFeed({ initialHookId }: HooksFeedProps) {
   const sharingRef = useRef(false);
 
   const [hooks, setHooks] = useState<HookFeedItem[]>([]);
+  const [viewerIsAdmin, setViewerIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -56,20 +58,28 @@ export function HooksFeed({ initialHookId }: HooksFeedProps) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const loadHooks = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
       const res = await fetch("/api/hooks", { credentials: "include" });
-      const data = (await res.json()) as { hooks?: HookFeedItem[]; error?: string };
+      const data = (await res.json()) as {
+        hooks?: HookFeedItem[];
+        viewerIsAdmin?: boolean;
+        error?: string;
+      };
       if (!res.ok) {
         setLoadError(data.error ?? "Could not load hooks.");
         setHooks([]);
+        setViewerIsAdmin(false);
         return;
       }
       const list = Array.isArray(data.hooks) ? data.hooks : [];
       setHooks(list);
+      setViewerIsAdmin(Boolean(data.viewerIsAdmin));
       if (initialHookId) {
         const idx = list.findIndex((h) => h.id === initialHookId);
         setActiveIndex(idx >= 0 ? idx : 0);
@@ -87,6 +97,10 @@ export function HooksFeed({ initialHookId }: HooksFeedProps) {
   useEffect(() => {
     void loadHooks();
   }, [loadHooks]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [activeIndex]);
 
   const scrollToIndex = useCallback(
     (index: number) => {
@@ -297,6 +311,38 @@ export function HooksFeed({ initialHookId }: HooksFeedProps) {
       }
     } finally {
       sharingRef.current = false;
+    }
+  };
+
+  const deleteHook = async (hook: HookFeedItem) => {
+    if (!viewerIsAdmin || deleting) return;
+    const ok = window.confirm(
+      `Delete “${hook.title}” from Explore? This cannot be undone.`,
+    );
+    if (!ok) return;
+
+    setDeleting(true);
+    setActionError(null);
+    setMenuOpen(false);
+    try {
+      const res = await fetch(`/api/hooks/${hook.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setActionError(data.error ?? "Could not delete hook.");
+        return;
+      }
+      setHooks((prev) => {
+        const next = prev.filter((h) => h.id !== hook.id);
+        setActiveIndex((idx) => Math.max(0, Math.min(idx, next.length - 1)));
+        return next;
+      });
+    } catch {
+      setActionError("Could not delete hook.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -565,13 +611,36 @@ export function HooksFeed({ initialHookId }: HooksFeedProps) {
             label="Share"
             onClick={() => void shareHook(activeHook)}
           />
-          <button
-            type="button"
-            className="mt-1 rounded-full p-2 text-white/80 transition hover:bg-white/10"
-            aria-label="More options"
-          >
-            <MoreHorizontal className="h-6 w-6" />
-          </button>
+          {viewerIsAdmin ? (
+            <div className="relative mt-1">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((o) => !o)}
+                className="rounded-full p-2 text-white/80 transition hover:bg-white/10"
+                aria-label="More options"
+                aria-expanded={menuOpen}
+              >
+                <MoreHorizontal className="h-6 w-6" />
+              </button>
+              {menuOpen ? (
+                <div className="absolute bottom-full right-0 mb-2 w-44 overflow-hidden rounded-xl border border-white/15 bg-[#1a1714] shadow-xl shadow-black/50">
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    onClick={() => void deleteHook(activeHook)}
+                    className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-red-300 transition hover:bg-white/[0.06] disabled:opacity-50"
+                  >
+                    {deleting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    Delete hook
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </aside>
       ) : null}
 
@@ -620,6 +689,26 @@ export function HooksFeed({ initialHookId }: HooksFeedProps) {
             compact
             onClick={() => void shareHook(activeHook)}
           />
+          {viewerIsAdmin ? (
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={() => void deleteHook(activeHook)}
+              className="flex flex-col items-center gap-0.5 text-red-300/90 disabled:opacity-50"
+              aria-label="Delete hook"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm">
+                {deleting ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-5 w-5" />
+                )}
+              </span>
+              <span className="text-[10px] font-medium uppercase tracking-wide">
+                Delete
+              </span>
+            </button>
+          ) : null}
         </div>
       ) : null}
 

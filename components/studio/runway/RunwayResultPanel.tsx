@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Download, Loader2, Plus, RotateCcw, Upload } from "lucide-react";
+import {
+  downloadFileFromUrl,
+  filenameFromMediaUrl,
+} from "@/lib/download-file";
 
 type RunwayResultPanelProps = {
   status: string;
@@ -48,7 +53,21 @@ export function RunwayResultPanel({
   queuedClipCount = 0,
   onAddAnotherClip,
 }: RunwayResultPanelProps) {
+  const [downloadingIndex, setDownloadingIndex] = useState<number | null>(null);
+
   if (status === "idle") return null;
+
+  const handleDownload = async (url: string, index: number) => {
+    setDownloadingIndex(index);
+    try {
+      await downloadFileFromUrl(
+        url,
+        filenameFromMediaUrl(url, outputKind, index),
+      );
+    } finally {
+      setDownloadingIndex(null);
+    }
+  };
 
   return (
     <section className="rounded-2xl border border-white/[0.08] bg-[#0f0e0d] p-5 sm:p-6">
@@ -167,17 +186,22 @@ export function RunwayResultPanel({
               </>
             ) : null}
             {output.map((url, i) => (
-              <a
+              <button
                 key={url}
-                href={url}
-                download
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/[0.08]"
+                type="button"
+                disabled={downloadingIndex === i}
+                onClick={() => void handleDownload(url, i)}
+                className="inline-flex items-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/[0.08] disabled:opacity-50"
               >
-                <Download className="h-4 w-4" />
-                Download{output.length > 1 ? ` ${i + 1}` : ""}
-              </a>
+                {downloadingIndex === i ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                {downloadingIndex === i
+                  ? "Saving…"
+                  : `Download${output.length > 1 ? ` ${i + 1}` : ""}`}
+              </button>
             ))}
           </div>
         </div>

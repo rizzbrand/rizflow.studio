@@ -3,6 +3,7 @@ import { del, put } from "@vercel/blob";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { notifyReferralFirstUpload } from "@/lib/referrals";
 import { MAX_BEAT_UPLOAD_BYTES } from "@/lib/studio-beat";
 import { insertTrack } from "@/lib/tracks";
 
@@ -105,6 +106,7 @@ export async function POST(request: Request) {
       blobPathname: uploaded.pathname,
       model: "Upload",
     });
+    void notifyReferralFirstUpload(userId).catch(() => {});
     return NextResponse.json({ track });
   } catch (err) {
     console.error("Library upload DB insert failed:", err);

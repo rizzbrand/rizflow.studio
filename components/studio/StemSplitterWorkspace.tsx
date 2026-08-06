@@ -44,7 +44,7 @@ function stemToTrack(stem: SeparatedStemResult, sourceName: string): StudioTrack
   };
 }
 
-function StemSplitterContent() {
+export function StemSplitterContent() {
   const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { playTrack, currentTrack, isPlaying, togglePlay } = useStudioPlayer();

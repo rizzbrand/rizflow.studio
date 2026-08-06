@@ -1,5 +1,6 @@
-import { StemSplitterWorkspace } from "@/components/studio/StemSplitterWorkspace";
+import { redirect } from "next/navigation";
 
+/** Stem splitter lives in Studio → Stems tab. */
 export default function StemSplitterPage() {
-  return <StemSplitterWorkspace />;
+  redirect("/studio?tab=stems");
 }

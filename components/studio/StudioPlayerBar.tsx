@@ -17,6 +17,7 @@ import {
   formatPlaybackTime,
   useStudioPlayer,
 } from "@/components/studio/StudioPlayerContext";
+import { TrackCoverArt } from "@/components/studio/TrackCoverArt";
 import { authClient } from "@/lib/auth-client";
 import {
   downloadAudioFromUrl,
@@ -140,9 +141,10 @@ export function StudioPlayerBar() {
           {/* Left — track */}
           <div className="min-w-0 justify-self-start sm:pr-2">
             <div className="flex min-h-[3rem] max-w-full items-center gap-3 sm:min-h-0">
-              <div
-                className={`relative h-12 w-12 shrink-0 overflow-hidden rounded bg-gradient-to-br shadow-inner ring-1 ring-white/10 sm:h-[52px] sm:w-[52px] ${currentTrack.thumbGradient}`}
-                aria-hidden
+              <TrackCoverArt
+                track={currentTrack}
+                className="h-12 w-12 rounded shadow-inner ring-1 ring-white/10 sm:h-[52px] sm:w-[52px]"
+                alt=""
               />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-white">

@@ -7,6 +7,7 @@ import {
   Gauge,
   Headphones,
   Layers,
+  Scissors,
   SlidersHorizontal,
   Sparkles,
   Waves,
@@ -16,7 +17,7 @@ import { useId } from "react";
 import { useStudioSession } from "@/components/studio/StudioSessionContext";
 import type { MixChannelId } from "@/lib/studio-session-audio";
 
-export type StudioDeskTab = "produce" | "mix" | "master";
+export type StudioDeskTab = "produce" | "mix" | "master" | "stems";
 
 type TabButtonProps = {
   id: string;
@@ -82,6 +83,13 @@ export function StudioDeskTabList({
         label="Master"
         icon={<Sparkles className="h-4 w-4 shrink-0 opacity-90" aria-hidden />}
         onClick={() => onTabChange("master")}
+      />
+      <TabButton
+        id={`${baseId}-stems`}
+        active={tab === "stems"}
+        label="Stems"
+        icon={<Scissors className="h-4 w-4 shrink-0 opacity-90" aria-hidden />}
+        onClick={() => onTabChange("stems")}
       />
     </div>
   );

@@ -5,6 +5,7 @@ import { put } from "@vercel/blob";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { isAdminUser } from "@/lib/admin";
 import {
   isHookVideoFile,
   isPublicAssetVideoPath,
@@ -96,7 +97,10 @@ export async function GET() {
 
   try {
     const hooks = await listPublicHooks(userId);
-    return NextResponse.json({ hooks });
+    return NextResponse.json({
+      hooks,
+      viewerIsAdmin: isAdminUser(session?.user),
+    });
   } catch (err) {
     console.error("List hooks failed:", err);
     return NextResponse.json(

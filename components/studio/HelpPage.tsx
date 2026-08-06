@@ -101,13 +101,13 @@ const categories: HelpCategory[] = [
         id: "stem-splitter",
         question: "What does Stem splitter do?",
         answer:
-          "Stem splitter separates a song into vocals, drums, bass, and other stems using Demucs. Upload audio from Library or your device, then download individual stems.",
+          "Stem splitter is under Studio → Stems. Upload a mixed song to isolate vocals, drums, bass, and more with Demucs, then download individual stems.",
       },
       {
         id: "music-to-video",
         question: "How does Music to video work?",
         answer:
-          "Choose a mode (music video, playlist aesthetic, or animated cover), add a prompt or image, and generate with Runway. When finished, you can publish the result directly to Hooks.",
+          "Choose a mode (music video, image generations, or animated cover), add a prompt or image, and generate with Runway. When finished, you can publish the result directly to Hooks.",
       },
     ],
   },

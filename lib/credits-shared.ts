@@ -105,7 +105,7 @@ export const RUNWAY_GENERATION_COSTS = [
   { label: "Music video (5s, face — Standard)", credits: 60 },
   { label: "Music video (5s, face — Best likeness)", credits: 180 },
   { label: "Animated cover (5s)", credits: 25 },
-  { label: "Playlist aesthetic image", credits: 8 },
+  { label: "Playlist aesthetic image (Runway)", credits: 8 },
 ] as const;
 
 export const EXPLORE_PROMO_ICON = Compass;

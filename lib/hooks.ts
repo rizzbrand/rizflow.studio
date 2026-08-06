@@ -443,4 +443,31 @@ export async function listPublicHookTracks(limit = 40): Promise<
     }));
 }
 
+/** Permanently remove a hook and related likes / saves / comments. */
+export async function deleteHookById(
+  hookId: string
+): Promise<{
+  deleted: boolean;
+  videoBlobPathname: string | null;
+  coverBlobPathname: string | null;
+} | null> {
+  if (!ObjectId.isValid(hookId)) return null;
+  const db = getMongoDb();
+  const doc = await getHookDoc(hookId);
+  if (!doc) return null;
+
+  await Promise.all([
+    db.collection(HOOKS).deleteOne({ _id: new ObjectId(hookId) }),
+    db.collection(LIKES).deleteMany({ hookId }),
+    db.collection(SAVES).deleteMany({ hookId }),
+    db.collection(COMMENTS).deleteMany({ hookId }),
+  ]);
+
+  return {
+    deleted: true,
+    videoBlobPathname: doc.videoBlobPathname || null,
+    coverBlobPathname: doc.coverBlobPathname || null,
+  };
+}
+
 export { parseTags };

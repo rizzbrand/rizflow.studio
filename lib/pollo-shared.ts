@@ -4,9 +4,30 @@
 
 export type PolloVideoMode = "music-video" | "animated-cover";
 
+export type PolloGenerationMode = PolloVideoMode | "playlist-aesthetic";
+
 export type PolloAspectRatio = "16:9" | "9:16" | "1:1" | "4:3" | "3:4";
 
 export type PolloResolution = "480p" | "720p" | "1080p";
+
+export type PolloImageResolution = "1K" | "2K" | "4K";
+
+export type PolloImageModelId =
+  | "pollojourney-v8-1"
+  | "nano-banana"
+  | "nano-banana-pro"
+  | "gpt-image-2";
+
+export type PolloImageModelOption = {
+  id: PolloImageModelId;
+  label: string;
+  description: string;
+  /** Path under https://pollo.ai/api/platform/generation/ */
+  path: string;
+  supportsResolution: boolean;
+  resolutions: readonly PolloImageResolution[];
+  tier: "fast" | "standard" | "premium";
+};
 
 export type PolloModelId =
   | "pollo-v2-0"
@@ -315,11 +336,68 @@ export function polloModel(id: string): PolloModelOption | null {
   return POLLO_MODELS.find((m) => m.id === id) ?? null;
 }
 
+export const POLLO_IMAGE_MODELS: readonly PolloImageModelOption[] = [
+  {
+    id: "pollojourney-v8-1",
+    label: "PolloJourney 8.1",
+    description: "Sharp text-to-image with strong prompt adherence and HD support",
+    path: "pollojourney/pollojourney-v8-1-image/image",
+    supportsResolution: true,
+    resolutions: ["1K", "2K"],
+    tier: "fast",
+  },
+  {
+    id: "nano-banana",
+    label: "Nano Banana",
+    description: "Fast Google image gen — great character consistency",
+    path: "google/nano-banana/image",
+    supportsResolution: true,
+    resolutions: ["1K", "2K", "4K"],
+    tier: "standard",
+  },
+  {
+    id: "nano-banana-pro",
+    label: "Nano Banana Pro",
+    description: "Higher fidelity with native 2K and stronger composition control",
+    path: "google/nano-banana-pro/image",
+    supportsResolution: true,
+    resolutions: ["1K", "2K", "4K"],
+    tier: "premium",
+  },
+  {
+    id: "gpt-image-2",
+    label: "GPT Image 2",
+    description: "OpenAI / ChatGPT — strong text rendering, instruction following, up to 4K",
+    path: "openai/gpt-image-2-0/image",
+    supportsResolution: true,
+    resolutions: ["1K", "2K", "4K"],
+    tier: "premium",
+  },
+] as const;
+
+export const DEFAULT_POLLO_IMAGE_MODEL: PolloImageModelId = "pollojourney-v8-1";
+
+export function polloImageModel(id: string): PolloImageModelOption | null {
+  return POLLO_IMAGE_MODELS.find((m) => m.id === id) ?? null;
+}
+
 export function runwayRatioToPolloAspect(
   ratio: string
 ): PolloAspectRatio {
-  if (ratio === "720:1280" || ratio === "9:16") return "9:16";
-  if (ratio === "1:1" || ratio === "960:960") return "1:1";
+  if (
+    ratio === "720:1280" ||
+    ratio === "1080:1920" ||
+    ratio === "9:16"
+  ) {
+    return "9:16";
+  }
+  if (
+    ratio === "1:1" ||
+    ratio === "960:960" ||
+    ratio === "1080:1080"
+  ) {
+    return "1:1";
+  }
   return "16:9";
 }
 

@@ -9,6 +9,7 @@ import {
   clampMusicLengthMs,
 } from "@/lib/music-prompt";
 import { insertTrack } from "@/lib/tracks";
+import { notifyReferralStudioUse } from "@/lib/referrals";
 import type { StudioTrack } from "@/lib/studio-track";
 
 export const maxDuration = 300;
@@ -157,6 +158,7 @@ export async function POST(request: Request) {
       );
     }
 
+    void notifyReferralStudioUse(userId).catch(() => {});
     return NextResponse.json({
       track,
       song: {

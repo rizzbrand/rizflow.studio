@@ -4,8 +4,11 @@ import { randomUUID } from "node:crypto";
 import { put } from "@vercel/blob";
 import {
   clampPolloLength,
+  polloImageModel,
   polloModel,
   type PolloAspectRatio,
+  type PolloImageModelId,
+  type PolloImageResolution,
   type PolloModelId,
   type PolloResolution,
 } from "@/lib/pollo-shared";
@@ -135,6 +138,19 @@ export async function createPolloGeneration(
   });
 }
 
+export async function createPolloImageGeneration(
+  modelId: PolloImageModelId,
+  input: Record<string, unknown>
+): Promise<PolloCreateTaskResponse> {
+  const model = polloImageModel(modelId);
+  if (!model) throw new Error("Unknown Pollo image model.");
+
+  return polloFetch<PolloCreateTaskResponse>(`/generation/${model.path}`, {
+    method: "POST",
+    body: JSON.stringify({ input, clientSource: "rizflow-studio" }),
+  });
+}
+
 export async function getPolloTaskStatus(
   taskId: string
 ): Promise<PolloTaskStatusResponse> {
@@ -185,6 +201,58 @@ export function buildPolloAnimatedCoverPrompt(motionPrompt: string): string {
     motionPrompt.trim() ||
     "Subtle looping motion, gentle camera push, atmospheric parallax";
   return `${base}. Seamless loop for album cover animation.`.slice(0, 2000);
+}
+
+export function buildPolloImagePrompt(input: {
+  idea: string;
+  title?: string;
+  styleLabel?: string;
+}): string {
+  const parts = [input.idea.trim()];
+  if (input.title?.trim()) parts.push(`Title mood: ${input.title.trim()}`);
+  if (input.styleLabel?.trim()) parts.push(`${input.styleLabel.trim()} aesthetic`);
+  parts.push(
+    "high quality still image, cohesive color palette, social-ready artwork, no readable text or watermarks"
+  );
+  return parts.join(". ").slice(0, 1000);
+}
+
+export function buildPolloImageInput(opts: {
+  modelId: PolloImageModelId;
+  prompt: string;
+  aspectRatio: PolloAspectRatio;
+  resolution?: PolloImageResolution;
+  imageUrl?: string | null;
+  style?: string;
+}): Record<string, unknown> {
+  const model = polloImageModel(opts.modelId);
+  if (!model) throw new Error("Unknown Pollo image model.");
+
+  const input: Record<string, unknown> = {
+    prompt: opts.prompt.trim(),
+    aspectRatio: opts.aspectRatio,
+  };
+
+  if (model.supportsResolution) {
+    const allowed = model.resolutions;
+    const requested = opts.resolution ?? allowed[0] ?? "1K";
+    input.resolution = allowed.includes(requested) ? requested : allowed[0];
+  }
+
+  if (opts.imageUrl) {
+    input.imageUrl = opts.imageUrl;
+  }
+
+  // Models that accept an optional style string on text-to-image
+  if (
+    (opts.modelId === "pollojourney-v8-1" || opts.modelId === "gpt-image-2") &&
+    opts.style?.trim() &&
+    !opts.imageUrl
+  ) {
+    input.style = opts.style.trim();
+  }
+
+  return input;
 }
 
 function blobExtension(mimeType: string): string {

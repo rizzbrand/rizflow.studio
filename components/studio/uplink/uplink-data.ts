@@ -24,23 +24,56 @@ export type UplinkMember = {
   role: CreativeRole;
   online: boolean;
   status?: string;
+  image?: string | null;
 };
 
-export type MessageKind = "text" | "track" | "collab" | "feedback" | "system";
+export type MessageKind =
+  | "text"
+  | "track"
+  | "voice"
+  | "file"
+  | "collab"
+  | "feedback"
+  | "system";
+
+export type UplinkTrackPayload = {
+  title: string;
+  artist: string;
+  duration: string;
+  vibe: string;
+  audioUrl?: string;
+  blobPathname?: string;
+};
+
+export type UplinkVoicePayload = {
+  audioUrl: string;
+  duration: string;
+  durationMs: number;
+  blobPathname?: string;
+};
+
+export type UplinkAttachmentPayload = {
+  name: string;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  blobPathname?: string;
+};
 
 export type UplinkMessage = {
   id: string;
   roomId: string;
   kind: MessageKind;
   authorId: string;
+  /** Display name from the server; preferred over mock member lookup. */
+  authorName?: string;
+  authorHandle?: string;
+  authorImage?: string | null;
   body: string;
   createdAt: number;
-  track?: {
-    title: string;
-    artist: string;
-    duration: string;
-    vibe: string;
-  };
+  track?: UplinkTrackPayload;
+  voice?: UplinkVoicePayload;
+  attachment?: UplinkAttachmentPayload;
   collab?: {
     lookingFor: string;
     deadline?: string;

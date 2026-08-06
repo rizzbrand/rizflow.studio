@@ -1,6 +1,9 @@
 import {
   clampPolloLength,
+  polloImageModel,
   polloModel,
+  type PolloImageModelId,
+  type PolloImageResolution,
   type PolloModelId,
   type PolloVideoMode,
 } from "@/lib/pollo-shared";
@@ -11,6 +14,12 @@ export type PolloCostInput = {
   duration: number;
   hasImage?: boolean;
   resolution?: "480p" | "720p" | "1080p";
+};
+
+export type PolloImageCostInput = {
+  model: PolloImageModelId;
+  resolution?: PolloImageResolution;
+  hasImage?: boolean;
 };
 
 /** Approximate Rizflow credits for Pollo generations (provider-billed separately). */
@@ -40,6 +49,16 @@ const BASE_CREDITS: Record<
   "sora-2-pro": { perShort: 90, perLong: 180 },
 };
 
+const IMAGE_CREDITS: Record<
+  PolloImageModelId,
+  { base: number; bump2k: number; bump4k: number }
+> = {
+  "pollojourney-v8-1": { base: 6, bump2k: 4, bump4k: 8 },
+  "nano-banana": { base: 8, bump2k: 5, bump4k: 10 },
+  "nano-banana-pro": { base: 12, bump2k: 6, bump4k: 12 },
+  "gpt-image-2": { base: 14, bump2k: 8, bump4k: 16 },
+};
+
 export function estimatePolloCredits(input: PolloCostInput): number {
   const model = polloModel(input.model);
   const length = clampPolloLength(
@@ -56,6 +75,18 @@ export function estimatePolloCredits(input: PolloCostInput): number {
     credits = Math.max(20, Math.round(credits * 0.7));
   }
 
+  return credits;
+}
+
+export function estimatePolloImageCredits(input: PolloImageCostInput): number {
+  const model = polloImageModel(input.model);
+  const table =
+    IMAGE_CREDITS[input.model] ?? IMAGE_CREDITS["pollojourney-v8-1"];
+  let credits = table.base;
+  const resolution = input.resolution ?? model?.resolutions[0] ?? "1K";
+  if (resolution === "2K") credits += table.bump2k;
+  if (resolution === "4K") credits += table.bump4k;
+  if (input.hasImage) credits += 2;
   return credits;
 }
 

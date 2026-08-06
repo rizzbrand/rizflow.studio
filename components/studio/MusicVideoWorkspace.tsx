@@ -75,6 +75,7 @@ import {
   isNewRunwayModel,
   type ModelBrand,
 } from "@/components/studio/music-to-video/ModelBrandIcons";
+import { MediaModeSwitch } from "@/components/studio/music-to-video/MediaModeSwitch";
 
 type VideoProvider = "pollo" | "runway";
 
@@ -617,15 +618,16 @@ export function MusicVideoWorkspace() {
           All video modes
         </Link>
 
-        <div className="flex flex-col items-center pt-2 text-center sm:pt-6">
-          <h2 className="font-display flex items-center gap-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-            <Sparkles className="h-5 w-5 text-white/70" aria-hidden />
-            Create Your Next Masterpiece
-            <Sparkles className="h-5 w-5 text-white/70" aria-hidden />
-          </h2>
-          <p className="mt-2 max-w-md text-sm text-white/40">
-            Text or image to video · Pollo AI & Runway
-          </p>
+        <div className="flex flex-col items-center gap-4 pt-2 text-center sm:pt-6">
+          <MediaModeSwitch active="video" />
+          <div>
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+              Create Your Next Masterpiece
+            </h2>
+            <p className="mt-2 max-w-md text-sm text-white/40">
+              Text or image to video · Pollo AI & Runway
+            </p>
+          </div>
         </div>
 
         {noProviderConfigured ? (

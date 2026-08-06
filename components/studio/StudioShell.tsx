@@ -47,6 +47,12 @@ export function StudioShell() {
     });
   }, []);
 
+  const updateLibraryTrack = useCallback((track: StudioTrack) => {
+    setTracks((prev) =>
+      prev.map((t) => (t.id === track.id ? { ...t, ...track } : t))
+    );
+  }, []);
+
   const addGeneratedTrack = useCallback((track: StudioTrack) => {
     addTrackToLibrary(track);
     setStudioInvite(track);
@@ -120,6 +126,7 @@ export function StudioShell() {
               tracks={tracks}
               isLoading={libraryLoading}
               onTrackUploaded={addTrackToLibrary}
+              onTrackUpdated={updateLibraryTrack}
             />
           </div>
         </main>

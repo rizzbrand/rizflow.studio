@@ -8,6 +8,7 @@ import {
   refundCreditHold,
 } from "@/lib/credits";
 import { runwayGenerationCost } from "@/lib/runway-credits";
+import { notifyReferralStudioUse } from "@/lib/referrals";
 import {
   buildAnimatedCoverPrompt,
   buildMusicVideoPrompt,
@@ -77,6 +78,7 @@ export async function POST(request: Request) {
 
   async function chargeForTask(taskId: string, credits: number) {
     const balanceAfter = await deductCredits(userId, credits, { taskId, mode });
+    void notifyReferralStudioUse(userId).catch(() => {});
     return balanceAfter;
   }
 

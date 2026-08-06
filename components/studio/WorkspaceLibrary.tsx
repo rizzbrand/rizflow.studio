@@ -9,6 +9,7 @@ import {
   Download,
   Filter,
   Heart,
+  ImagePlus,
   MoreHorizontal,
   Music2,
   Search,
@@ -28,6 +29,7 @@ import {
   type TrackReaction,
 } from "@/lib/library-ui-storage";
 import { useStudioPlayer } from "@/components/studio/StudioPlayerContext";
+import { TrackCoverArt } from "@/components/studio/TrackCoverArt";
 import { authClient } from "@/lib/auth-client";
 import {
   downloadAudioFromUrl,
@@ -64,6 +66,7 @@ type WorkspaceLibraryProps = {
   /** Full main-area width on `/library`; default is fixed sidebar width on `/create`. */
   variant?: "sidebar" | "page";
   onTrackUploaded?: (track: StudioTrack) => void;
+  onTrackUpdated?: (track: StudioTrack) => void;
 };
 
 function buildMockVerse(track: StudioTrack): string[] {
@@ -142,9 +145,11 @@ export function WorkspaceLibrary({
   isLoading = false,
   variant = "sidebar",
   onTrackUploaded,
+  onTrackUpdated,
 }: WorkspaceLibraryProps) {
   const uploadInputId = useId();
   const uploadInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortMode>("newest");
@@ -157,6 +162,9 @@ export function WorkspaceLibrary({
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [coverTrackId, setCoverTrackId] = useState<string | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [coverError, setCoverError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const { setQueue, playTrack, currentTrack, isPlaying } = useStudioPlayer();
@@ -330,6 +338,58 @@ export function WorkspaceLibrary({
     [onTrackUploaded]
   );
 
+  const openCoverPicker = useCallback((trackId: string) => {
+    setCoverTrackId(trackId);
+    setCoverError(null);
+    // Defer so the input's track id state is set before the dialog opens.
+    queueMicrotask(() => coverInputRef.current?.click());
+  }, []);
+
+  const uploadCover = useCallback(
+    async (file: File, trackId: string) => {
+      if (!file.type.startsWith("image/")) {
+        setCoverError("Cover must be an image (png, jpg, webp, or gif).");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setCoverError("Cover must be 5 MB or smaller.");
+        return;
+      }
+
+      setCoverError(null);
+      setCoverUploading(true);
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch(
+          `/api/library/${encodeURIComponent(trackId)}/cover`,
+          {
+            method: "POST",
+            body: form,
+            credentials: "include",
+          }
+        );
+        const data = (await res.json()) as {
+          track?: StudioTrack;
+          error?: string;
+        };
+        if (!res.ok || !data.track) {
+          throw new Error(data.error ?? "Cover upload failed.");
+        }
+        onTrackUpdated?.(data.track);
+      } catch (err) {
+        setCoverError(
+          err instanceof Error ? err.message : "Could not upload cover."
+        );
+      } finally {
+        setCoverUploading(false);
+        setCoverTrackId(null);
+        if (coverInputRef.current) coverInputRef.current.value = "";
+      }
+    },
+    [onTrackUpdated]
+  );
+
   const asideClass =
     variant === "page"
       ? "rf-studio-panel flex min-h-[50vh] w-full min-w-0 flex-1 flex-col lg:min-h-0"
@@ -366,6 +426,18 @@ export function WorkspaceLibrary({
                 if (file) void uploadSong(file);
               }}
             />
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif"
+              className="sr-only"
+              disabled={coverUploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                const trackId = coverTrackId;
+                if (file && trackId) void uploadCover(file, trackId);
+              }}
+            />
             <button
               type="button"
               disabled={uploading}
@@ -383,6 +455,9 @@ export function WorkspaceLibrary({
         </div>
         {uploadError ? (
           <p className="mt-2 text-xs text-amber-200/90">{uploadError}</p>
+        ) : null}
+        {coverError ? (
+          <p className="mt-2 text-xs text-amber-200/90">{coverError}</p>
         ) : null}
       </div>
 
@@ -521,13 +596,15 @@ export function WorkspaceLibrary({
                     }}
                     className="flex w-full cursor-pointer items-start gap-3 text-left"
                   >
-                    <div
-                      className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br ${track.thumbGradient}`}
-                    >
-                      <span className="absolute bottom-1 right-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-white/95">
+                    <div className="relative h-14 w-14 shrink-0">
+                      <TrackCoverArt
+                        track={track}
+                        className="h-14 w-14 rounded-xl"
+                      />
+                      <span className="pointer-events-none absolute bottom-1 right-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-white/95">
                         {track.duration}
                       </span>
-                      <span className="absolute inset-0 grid place-items-center opacity-0 transition group-hover:opacity-100">
+                      <span className="pointer-events-none absolute inset-0 grid place-items-center opacity-0 transition group-hover:opacity-100">
                         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/90">
                           <Play className="h-4 w-4 fill-current" />
                         </span>
@@ -562,6 +639,23 @@ export function WorkspaceLibrary({
                           </button>
                           {menuTrackId === track.id ? (
                             <div className="absolute right-0 top-full z-20 mt-1 min-w-[11rem] rounded-xl border border-white/[0.1] bg-[#141210] py-1 shadow-xl">
+                              <button
+                                type="button"
+                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-white/85 hover:bg-white/10"
+                                disabled={coverUploading}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMenuTrackId(null);
+                                  openCoverPicker(track.id);
+                                }}
+                              >
+                                {coverUploading && coverTrackId === track.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin opacity-70" />
+                                ) : (
+                                  <ImagePlus className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                                )}
+                                {track.coverUrl ? "Change cover" : "Add cover"}
+                              </button>
                               <button
                                 type="button"
                                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-white/85 hover:bg-white/10"
@@ -743,18 +837,43 @@ export function WorkspaceLibrary({
           {activeTrack ? (
             <div className="flex flex-col gap-3">
               <div className="flex items-start gap-3">
-                <div
-                  className={`relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${activeTrack.thumbGradient}`}
-                >
-                  <span className="absolute bottom-2 right-2 rounded bg-black/55 px-2 py-1 text-[10px] font-semibold tabular-nums text-white/95">
+                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl">
+                  <TrackCoverArt
+                    track={activeTrack}
+                    className="h-24 w-24 rounded-2xl"
+                  />
+                  <span className="pointer-events-none absolute bottom-2 right-2 rounded bg-black/55 px-2 py-1 text-[10px] font-semibold tabular-nums text-white/95">
                     {activeTrack.duration}
                   </span>
-                  {activeTrack && reactions[activeTrack.id] === "up" ? (
-                    <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-black/35 px-2 py-1 text-[10px] font-semibold text-fuchsia-200/95">
+                  {reactions[activeTrack.id] === "up" ? (
+                    <span className="pointer-events-none absolute left-2 top-2 flex items-center gap-1 rounded-full bg-black/35 px-2 py-1 text-[10px] font-semibold text-fuchsia-200/95">
                       <Heart className="h-3.5 w-3.5 fill-current" />
                       liked
                     </span>
                   ) : null}
+                  <button
+                    type="button"
+                    disabled={coverUploading}
+                    onClick={() => openCoverPicker(activeTrack.id)}
+                    className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/70 via-black/10 to-transparent pb-2 opacity-0 transition hover:opacity-100 focus:opacity-100 disabled:opacity-60"
+                    aria-label={
+                      activeTrack.coverUrl
+                        ? "Change cover photo"
+                        : "Add cover photo"
+                    }
+                    title={
+                      activeTrack.coverUrl ? "Change cover" : "Add cover"
+                    }
+                  >
+                    <span className="inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-semibold text-white">
+                      {coverUploading && coverTrackId === activeTrack.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <ImagePlus className="h-3 w-3" />
+                      )}
+                      Cover
+                    </span>
+                  </button>
                 </div>
 
                 <div className="min-w-0 flex-1">

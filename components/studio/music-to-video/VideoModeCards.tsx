@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clapperboard, Disc3, ListMusic } from "lucide-react";
+import { Clapperboard, Disc3, ImageIcon } from "lucide-react";
 import { CardBackgroundVideo } from "@/components/studio/music-to-video/CardBackgroundVideo";
 
 // Music video card — swap this URL for your video
@@ -8,8 +8,8 @@ const MUSIC_VIDEO_CARD_VIDEO = "/music-video.mp4";
 // Animated album cover card — swap this URL for your video
 const ANIMATED_COVER_CARD_VIDEO = "/albumcover.mp4";
 
-// Playlist aesthetic card — swap this path for your image
-const PLAYLIST_AESTHETIC_CARD_IMAGE = "/Coverart.PNG";
+// Image generations card — swap this path for your image
+const IMAGE_GENERATIONS_CARD_IMAGE = "/Coverart.PNG";
 
 export const videoModes = [
   {
@@ -29,13 +29,13 @@ export const videoModes = [
   {
     id: "playlist-aesthetic",
     href: "/studio/music-to-video/playlist-aesthetic",
-    title: "What my playlist looks like",
+    title: "Image generations",
     description:
-      "Upload your Spotify playlist. Get aesthetic mood boards and cover art.",
-    icon: ListMusic,
+      "Describe a vibe and generate still images, mood boards, and cover art.",
+    icon: ImageIcon,
     background: (
       <img
-        src={PLAYLIST_AESTHETIC_CARD_IMAGE}
+        src={IMAGE_GENERATIONS_CARD_IMAGE}
         alt=""
         className="absolute inset-0 z-0 h-full w-full object-cover"
         aria-hidden

@@ -53,7 +53,7 @@ const featureCards = [
     tint: "amber" as const,
     bullets: ["Isolate vocals or full stems", "Powered by Demucs on Replicate", "Download and reuse anywhere"],
     cta: "Open splitter",
-    href: "/studio/stem-splitter",
+    href: "/studio?tab=stems",
   },
   {
     title: "AI Artist Assistant",
@@ -169,10 +169,10 @@ function DashboardFrame() {
                     workspace — from first prompt to final take.
                   </p>
                   <Link
-                    href="/create"
+                    href="/uplink"
                     className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-fuchsia-950/40 transition hover:brightness-110"
                   >
-                    Start now
+                    Join community
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>

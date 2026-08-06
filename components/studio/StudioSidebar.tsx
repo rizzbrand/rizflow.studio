@@ -8,8 +8,8 @@ import { StudioUserSection } from "@/components/auth/StudioUserSection";
 import { MobileBottomNav } from "@/components/studio/MobileBottomNav";
 import {
   ScanFace,
+  Brain,
   CircleHelp,
-  Clapperboard,
   Coins,
   Compass,
   FileMusic,
@@ -20,8 +20,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Radio,
-  Scissors,
   ScrollText,
+  Settings,
   TrendingUp,
   X,
   type LucideIcon,
@@ -30,6 +30,7 @@ import {
 const SIDEBAR_COLLAPSED_KEY = "rf-studio-sidebar-collapsed";
 
 const quickLinks: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/settings", label: "Profile settings", icon: Settings },
   { href: "/terms", label: "Terms and Policies", icon: ScrollText },
   { href: "/credits", label: "Earn credits", icon: Coins },
   { href: "/help", label: "Help", icon: CircleHelp },
@@ -43,8 +44,7 @@ const nav = [
   { href: "/studio", label: "Studio", icon: Mic },
   { href: "/studio/artist-assistant", label: "Artist assistant", icon: ScanFace },
   { href: "/studio/viral-content", label: "Viral content", icon: TrendingUp },
-  { href: "/studio/stem-splitter", label: "Stem splitter", icon: Scissors },
-  { href: "/studio/music-to-video", label: "Rizflow AI", icon: Clapperboard },
+  { href: "/studio/music-to-video", label: "Rizflow AI", icon: Brain },
   { href: "/library", label: "Library", icon: Library },
 ] as const;
 
@@ -124,8 +124,8 @@ function SidebarPanel({
       <div
         className={`flex border-b border-white/[0.05] ${
           collapsed
-            ? "min-h-[4.25rem] items-center justify-between gap-2 px-4 py-2.5 lg:flex-col lg:items-center lg:justify-start lg:gap-2 lg:px-2 lg:py-3"
-            : "min-h-[4.25rem] items-center justify-between gap-2 px-4 py-2.5"
+            ? "min-h-[5rem] items-center justify-between gap-2 px-4 py-3 lg:flex-col lg:items-center lg:justify-start lg:gap-2 lg:px-2 lg:py-3"
+            : "min-h-[5rem] items-center justify-between gap-2 px-4 py-3"
         }`}
       >
         <Link
@@ -141,7 +141,7 @@ function SidebarPanel({
             width={360}
             height={100}
             priority
-            className="h-9 w-auto transition-opacity group-hover:opacity-90 sm:h-10"
+            className="h-12 w-auto transition-opacity group-hover:opacity-90 sm:h-14"
           />
         </Link>
         {collapsed ? (
@@ -306,7 +306,7 @@ export function StudioSidebar() {
             width={360}
             height={100}
             priority
-            className="h-8 w-auto"
+            className="h-10 w-auto"
           />
         </Link>
         <button

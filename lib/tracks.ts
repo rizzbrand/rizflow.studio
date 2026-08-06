@@ -1,4 +1,5 @@
 import { ObjectId } from "mongodb";
+import { del } from "@vercel/blob";
 import { getMongoDb } from "@/lib/mongo";
 import { formatMsAsDuration } from "@/lib/music-prompt";
 import { gradientForId, type StudioTrack } from "@/lib/studio-track";
@@ -14,6 +15,8 @@ export type TrackDoc = {
   musicLengthMs: number;
   audioUrl: string;
   blobPathname: string;
+  coverUrl?: string | null;
+  coverBlobPathname?: string | null;
   model: string;
   createdAt: Date;
 };
@@ -26,6 +29,7 @@ function docToStudioTrack(doc: TrackDoc): StudioTrack {
     model: doc.model,
     tags: doc.genres,
     thumbGradient: gradientForId(doc._id.toString()),
+    coverUrl: doc.coverUrl ?? null,
     audioUrl: doc.audioUrl,
     createdAt: doc.createdAt.getTime(),
   };
@@ -40,6 +44,8 @@ export async function insertTrack(input: {
   audioUrl: string;
   blobPathname: string;
   model: string;
+  coverUrl?: string | null;
+  coverBlobPathname?: string | null;
 }): Promise<StudioTrack> {
   const db = getMongoDb();
   const _id = new ObjectId();
@@ -52,6 +58,8 @@ export async function insertTrack(input: {
     musicLengthMs: input.musicLengthMs,
     audioUrl: input.audioUrl,
     blobPathname: input.blobPathname,
+    coverUrl: input.coverUrl ?? null,
+    coverBlobPathname: input.coverBlobPathname ?? null,
     model: input.model,
     createdAt: new Date(),
   };
@@ -83,4 +91,49 @@ export async function getTrackByIdForUser(
   });
   if (!doc) return null;
   return docToStudioTrack(doc as TrackDoc);
+}
+
+export async function updateTrackCover(
+  userId: string,
+  trackId: string,
+  cover: { coverUrl: string; coverBlobPathname: string }
+): Promise<StudioTrack | null> {
+  if (!ObjectId.isValid(trackId)) return null;
+  const db = getMongoDb();
+  const col = db.collection<TrackDoc>(COLLECTION);
+  const existing = await col.findOne({
+    _id: new ObjectId(trackId),
+    userId,
+  });
+  if (!existing) return null;
+
+  const previousPath = existing.coverBlobPathname ?? null;
+
+  await col.updateOne(
+    { _id: existing._id, userId },
+    {
+      $set: {
+        coverUrl: cover.coverUrl,
+        coverBlobPathname: cover.coverBlobPathname,
+      },
+    }
+  );
+
+  if (
+    previousPath &&
+    previousPath !== cover.coverBlobPathname &&
+    process.env.BLOB_READ_WRITE_TOKEN
+  ) {
+    try {
+      await del(previousPath, { token: process.env.BLOB_READ_WRITE_TOKEN });
+    } catch {
+      /* ignore stale blob cleanup */
+    }
+  }
+
+  return docToStudioTrack({
+    ...existing,
+    coverUrl: cover.coverUrl,
+    coverBlobPathname: cover.coverBlobPathname,
+  });
 }

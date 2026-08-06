@@ -37,6 +37,12 @@ export function LibraryShell() {
     });
   }, []);
 
+  const updateTrack = useCallback((track: StudioTrack) => {
+    setTracks((prev) =>
+      prev.map((t) => (t.id === track.id ? { ...t, ...track } : t))
+    );
+  }, []);
+
   return (
     <StudioPlayerProvider>
       <div className="rf-studio-shell flex min-h-[100dvh] flex-col overflow-x-hidden pb-[var(--player-h)] text-[#f4f1ec] lg:h-[calc(100dvh-var(--player-h))] lg:min-h-0 lg:flex-row lg:overflow-hidden lg:pb-0">
@@ -51,6 +57,7 @@ export function LibraryShell() {
             isLoading={libraryLoading}
             variant="page"
             onTrackUploaded={addUploadedTrack}
+            onTrackUpdated={updateTrack}
           />
         </main>
       </div>
